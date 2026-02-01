@@ -1,0 +1,79 @@
+# =====================================
+# 💾 WORKFLOW.yaml
+# =====================================
+#
+# プロジェクト: sum-it
+# セッション間で情報を保持するためのセーブデータ。
+#
+# =====================================
+
+workflow:
+  version: "1.0"
+  last_updated: "2026-02-01T18:20:00+09:00"
+
+  last_session_summary: |
+    【今回のセッションでやったこと】
+    - プロジェクト「sum-it」の開始
+    - 設計ドキュメントに基づく要件定義の完了（Phase 0）
+    - prompt/ フォルダと管理ファイルの生成
+    - Next.js 14 の基本構成ファイル、Firebase設定、型定義の手動生成完了
+    
+    【次のステップ】
+    - ユーザーによる pnpm install と Git 初期化の実行待ち
+    - Phase 1: エージェント一覧・作成機能の実装開始
+
+  progress:
+    current_phase:
+      number: 1
+      name: "環境構築 & エージェント管理"
+      status: "waiting_user_setup"
+    
+    current_task:
+      description: "依存関係のインストールとGit初期化（ユーザー操作待ち）"
+      started_at: "2026-02-01T19:45:00+09:00"
+
+  decisions:
+    adopted:
+      - id: "D001"
+        date: "2026-02-01"
+        decision: "Next.js 14 App Router を採用"
+        reason: "最新の機能とAPI統合の容易さ"
+      - id: "D002"
+        date: "2026-02-01"
+        decision: "Firebase Firestore を DB に採用"
+        reason: "リアルタイム同期と開発スピードの重視"
+
+  features:
+    planned:
+      - id: "F-001"
+        name: "エージェント一覧表示"
+        status: "planned"
+      - id: "F-002"
+        name: "エージェント作成"
+        status: "planned"
+      - id: "F-101"
+        name: "会議作成"
+        status: "planned"
+      - id: "F-104"
+        name: "順次発言ロジック"
+        status: "planned"
+      - id: "F-106"
+        name: "意見集約サマリー"
+        status: "planned"
+
+    in_progress: []
+    completed: []
+
+  tasks:
+    - id: "T1.1"
+      description: "環境構築（Next.js, Firebase, Git）"
+      status: "in_progress"
+    - id: "T1.2"
+      description: "database.md の作成"
+      status: "planned"
+    - id: "T1.3"
+      description: "Firebase 初期設定 (src/lib/firebase.ts)"
+      status: "planned"
+    - id: "T1.7"
+      description: "エージェント一覧画面の実装"
+      status: "planned"

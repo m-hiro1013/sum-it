@@ -1,0 +1,37 @@
+# 📖 BOOK.yaml
+
+# エージェント管理ブック
+# どのエージェントがどのタスクを担当しているか記録するよ。
+
+agents:
+  - id: "orchestrator"
+    name: "Orchestrator"
+    role: "全体の進行管理、ワークフローの実行制御"
+    status: "active"
+
+  - id: "bookkeeper"
+    name: "BookKeeper"
+    role: "WORKFLOW.yaml, BOOK.yaml の記録・管理"
+    status: "active"
+
+  - id: "dbmanager"
+    name: "DBManager"
+    role: "DATABASE.md, KNOWLEDGE.md の管理"
+    status: "active"
+
+  - id: "planner"
+    name: "Planner"
+    role: "タスク分解、実装スコープの決定"
+    status: "active"
+
+  - id: "coder"
+    name: "Coder"
+    role: "コード実装、環境構築"
+    status: "active"
+
+assignments:
+  current_session:
+    - agent: "orchestrator"
+      task: "sum-it プロジェクトのセットアップ"
+    - agent: "coder"
+      task: "Next.js プロジェクト初期化"

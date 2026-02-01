@@ -1,0 +1,26 @@
+# =====================================
+# 🏗️ ARCHITECTURE.yaml
+# =====================================
+#
+# プロジェクト: sum-it
+# 実装済み機能のテクニカルな仕様書。
+#
+# =====================================
+
+system_overview:
+  architecture: "Next.js App Router"
+  database: "Firestore (NoSQL)"
+  authentication: "Firebase Auth (Phase 4予定)"
+
+components:
+  implementation_status: "pending"
+  shared: []
+
+api_routes:
+  implementation_status: "pending"
+  agents: []
+  meetings: []
+
+data_models:
+  agent: "src/types/agent.ts (Planned)"
+  meeting: "src/types/meeting.ts (Planned)"

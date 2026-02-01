@@ -1,0 +1,61 @@
+# =====================================
+# 📋 PROJECT_SPECIFIC.yaml
+# =====================================
+#
+# プロジェクト: sum-it
+# 目的: 複数のAIエージェントによる会議シミュレーション＆意見集約ツール
+# 作成日: 2026-02-01
+#
+# =====================================
+
+project:
+  name: "sum-it"
+  codename: "sum-it"
+  description: |
+    「Summarize it（まとめて！）」から名付けた、
+    複数のAIエージェントによる会議シミュレーション＆意見集約ツール。
+    自分だけのAIエージェントを事前定義し、議題に対して多角的な意見を得ることができる。
+
+  purpose:
+    primary: "一人で考える偏りを防ぎ、複数の視点から効率的に意見を集約する"
+    secondary:
+      - "エージェントの事前定義によるプロンプト作成の手間削減"
+      - "会議結果の自動サマリー生成"
+      - "個人ツールの枠を超えた将来的なSaaS化への布石"
+
+  success_criteria:
+    - "Firebase Firestoreを使用したエージェントのCRUDが完璧に動作する"
+    - "OpenAI/Anthropic/Google AIの複数LLMと連携できる"
+    - "会議のリアルタイム表示とサマリー集約が正常に行われる"
+    - "Next.js 14 App Routerによる高速で快適なUI提供"
+
+user:
+  developer:
+    name: "ひろきくん"
+    github: "Sunwood-ai-labs"
+
+tech_stack:
+  language: "TypeScript"
+  framework: "Next.js 14+ (App Router)"
+  styling: "Tailwind CSS"
+  database: "Firebase Firestore"
+  package_manager: "pnpm"
+  infrastructure: "Vercel"
+  ai_apis:
+    - "OpenAI API"
+    - "Anthropic API"
+    - "Google AI SDK"
+
+phases:
+  - phase: 1
+    name: "エージェント管理"
+    description: "エージェントのCRUD機能実装"
+  - phase: 2
+    name: "会議機能"
+    description: "LLM連携と会議実行ロジックの実装"
+  - phase: 3
+    name: "会議履歴・管理"
+    description: "履歴閲覧とエクスポート機能"
+  - phase: 4
+    name: "高度な機能"
+    description: "認証、並列発言、投票機能など"
