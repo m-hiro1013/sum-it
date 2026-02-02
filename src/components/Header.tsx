@@ -13,7 +13,6 @@ export default function Header() {
     ];
 
     const adminItems = [
-        { name: "Facilitators", href: "/settings/facilitators", icon: Terminal },
         { name: "Output Styles", href: "/settings/styles", icon: LayoutGrid },
     ];
 
@@ -36,8 +35,8 @@ export default function Header() {
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${pathname === item.href
-                                        ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
-                                        : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-zinc-800"
+                                    ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                                    : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-zinc-800"
                                     }`}
                             >
                                 <item.icon size={18} />
@@ -52,8 +51,8 @@ export default function Header() {
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${pathname.startsWith(item.href)
-                                        ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400"
-                                        : "text-gray-400 hover:bg-gray-50 dark:text-gray-500 dark:hover:bg-zinc-800"
+                                    ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400"
+                                    : "text-gray-400 hover:bg-gray-50 dark:text-gray-500 dark:hover:bg-zinc-800"
                                     }`}
                             >
                                 <item.icon size={16} />
