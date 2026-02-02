@@ -60,6 +60,26 @@
 | `is_active` | boolean | 選択肢に表示するか |
 | `created_at` | timestamp | 作成日時 |
 
+### 6. `meeting_workflows` (🆕 ワークフロー定義)
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Document ID |
+| `name` | string | ワークフロー名 |
+| `description` | string | 説明文 |
+| `facilitator_id` | string | 議長ID |
+| `agent_ids` | array[string] | 参加エージェントID一覧 |
+| `steps` | array[WorkflowStep] | 実行ステップの配列 |
+| `is_active` | boolean | 有効/無効 |
+| `created_at` | timestamp | 作成日時 |
+
+#### WorkflowStep Types
+| Type | Fields | Description |
+|------|--------|-------------|
+| `speak` | `agent_id: string` | 1人が発言 |
+| `parallel_speak` | `agent_ids: string[]` | 複数人が同時発言 |
+| `summary` | - | 議長がまとめ（会議完了） |
+| `user_intervention` | `label?: string` | ユーザー介入（一時停止） |
+
 ### 6. `meetings` (会議室 - ログと設定)
 | Field | Type | Description |
 |-------|------|-------------|
@@ -69,7 +89,9 @@
 | `whiteboard` | string | ホワイトボード（全エージェントの共通認識） |
 | `facilitator_id` | string | 使用された議長ID |
 | `agent_ids` | array[string] | 参加エージェントのID一覧 |
-| `status` | string | 状態 (pending, in_progress, completed, error) |
+| `workflow_id` | string | 🆕 使用するワークフローID（オプション） |
+| `current_step` | number | 🆕 現在のステップ番号（0始まり） |
+| `status` | string | 状態 (pending, in_progress, waiting, completed, error) |
 | `final_conclusion` | string | 議長が作成したまとめ（結論） |
 | `created_at` | timestamp | 開始日時 |
 | `completed_at` | timestamp | 完了日時 |
@@ -90,5 +112,7 @@
 - `meetings.agent_ids` → `agents.id` (array)
 - `messages.meeting_id` → `meetings.id`
 - `messages.agent_id` → `agents.id` (or "system")
-- `meeting_templates.facilitator_id` → `facilitators.id`
 - `meeting_templates.agent_ids` → `agents.id` (array)
+- `meetings.workflow_id` → `meeting_workflows.id`
+- `meeting_workflows.facilitator_id` → `facilitators.id`
+- `meeting_workflows.agent_ids` → `agents.id` (array)

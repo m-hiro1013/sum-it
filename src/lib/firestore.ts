@@ -19,6 +19,7 @@ import { LLMModel } from "../types/model";
 import { OutputStyle, OutputStyleInput } from "../types/style";
 import { Facilitator, FacilitatorInput } from "../types/facilitator";
 import { MeetingTemplate, MeetingTemplateInput } from "../types/template";
+import { MeetingWorkflow, MeetingWorkflowInput } from "../types/workflow";
 
 const AGENTS_COLLECTION = "agents";
 const MEETINGS_COLLECTION = "meetings";
@@ -27,6 +28,7 @@ const MODELS_COLLECTION = "llm_models";
 const STYLES_COLLECTION = "output_styles";
 const FACILITATORS_COLLECTION = "facilitators";
 const TEMPLATES_COLLECTION = "meeting_templates";
+const WORKFLOWS_COLLECTION = "meeting_workflows";
 
 // --- Agents ---
 export const getAgents = async (): Promise<Agent[]> => {
@@ -64,6 +66,11 @@ export const getOutputStyles = async (onlyActive = true): Promise<OutputStyle[]>
         : query(collection(db, STYLES_COLLECTION), orderBy("created_at", "asc"));
     return (await getDocs(q)).docs.map(doc => ({ id: doc.id, ...doc.data() } as OutputStyle));
 };
+export const getOutputStyle = async (id: string): Promise<OutputStyle | null> => {
+    const docRef = doc(db, STYLES_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as OutputStyle) : null;
+};
 export const createOutputStyle = async (style: OutputStyleInput) => {
     return (await addDoc(collection(db, STYLES_COLLECTION), { ...style, created_at: serverTimestamp() })).id;
 };
@@ -86,6 +93,11 @@ export const createFacilitator = async (facilitator: FacilitatorInput) => {
 };
 export const updateFacilitator = async (id: string, facilitator: Partial<FacilitatorInput>) => {
     await updateDoc(doc(db, FACILITATORS_COLLECTION, id), facilitator);
+};
+export const getFacilitator = async (id: string): Promise<Facilitator | null> => {
+    const docRef = doc(db, FACILITATORS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as Facilitator) : null;
 };
 export const deleteFacilitator = async (id: string) => {
     await deleteDoc(doc(db, FACILITATORS_COLLECTION, id));
@@ -143,4 +155,35 @@ export const subscribeToMessages = (meeting_id: string, callback: (messages: Mes
         const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
         callback(messages);
     });
+};
+export const getMessages = async (meeting_id: string): Promise<Message[]> => {
+    const q = query(
+        collection(db, MESSAGES_COLLECTION),
+        where("meeting_id", "==", meeting_id),
+        orderBy("created_at", "asc")
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+};
+
+// --- Meeting Workflows ---
+export const getMeetingWorkflows = async (onlyActive = true): Promise<MeetingWorkflow[]> => {
+    const q = onlyActive
+        ? query(collection(db, WORKFLOWS_COLLECTION), where("is_active", "==", true), orderBy("created_at", "asc"))
+        : query(collection(db, WORKFLOWS_COLLECTION), orderBy("created_at", "asc"));
+    return (await getDocs(q)).docs.map(doc => ({ id: doc.id, ...doc.data() } as MeetingWorkflow));
+};
+export const getMeetingWorkflow = async (id: string): Promise<MeetingWorkflow | null> => {
+    const docRef = doc(db, WORKFLOWS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as MeetingWorkflow) : null;
+};
+export const createMeetingWorkflow = async (workflow: MeetingWorkflowInput) => {
+    return (await addDoc(collection(db, WORKFLOWS_COLLECTION), { ...workflow, created_at: serverTimestamp() })).id;
+};
+export const updateMeetingWorkflow = async (id: string, workflow: Partial<MeetingWorkflowInput>) => {
+    await updateDoc(doc(db, WORKFLOWS_COLLECTION, id), workflow);
+};
+export const deleteMeetingWorkflow = async (id: string) => {
+    await deleteDoc(doc(db, WORKFLOWS_COLLECTION, id));
 };

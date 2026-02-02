@@ -5,7 +5,9 @@ export interface Meeting {
     whiteboard: string; // 共通認識
     facilitator_id: string; // 使用する議長のID
     agent_ids: string[]; // 参加エージェントのID一覧
-    status: "pending" | "in_progress" | "completed" | "error";
+    workflow_id?: string; // 🆕 使用するワークフローのID
+    current_step?: number; // 🆕 現在のステップ番号
+    status: "pending" | "in_progress" | "waiting" | "completed" | "error"; // 🆕 "waiting" を追加！
     final_conclusion?: string; // 議長の総評（サマリー）
     created_at: any;
     completed_at?: any;

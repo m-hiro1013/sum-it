@@ -12,11 +12,13 @@ import {
     getFacilitators,
     createMeeting,
     getMeetingTemplates,
-    createMeetingTemplate
+    createMeetingTemplate,
+    getMeetingWorkflows
 } from "@/lib/firestore";
 import { Agent } from "@/types/agent";
 import { Facilitator } from "@/types/facilitator";
 import { MeetingTemplate } from "@/types/template";
+import { MeetingWorkflow } from "@/types/workflow";
 import {
     Loader2,
     Users,
@@ -30,7 +32,8 @@ import {
     Info,
     Save,
     MessageSquare,
-    Edit3
+    Edit3,
+    Zap
 } from "lucide-react";
 
 export default function NewMeetingPage() {
@@ -40,12 +43,14 @@ export default function NewMeetingPage() {
     const [agents, setAgents] = useState<Agent[]>([]);
     const [facilitators, setFacilitators] = useState<Facilitator[]>([]);
     const [templates, setTemplates] = useState<MeetingTemplate[]>([]);
+    const [workflows, setWorkflows] = useState<MeetingWorkflow[]>([]);
 
     // フォームステート
     const [title, setTitle] = useState("");
     const [topic, setTopic] = useState("");
     const [whiteboard, setWhiteboard] = useState("");
     const [facilitatorId, setFacilitatorId] = useState("");
+    const [workflowId, setWorkflowId] = useState("");
     const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([]);
 
     // 補助ステート
@@ -57,14 +62,16 @@ export default function NewMeetingPage() {
 
     useEffect(() => {
         const fetchData = async () => {
-            const [agentsData, facilitatorsData, templatesData] = await Promise.all([
+            const [agentsData, facilitatorsData, templatesData, workflowsData] = await Promise.all([
                 getAgents(),
                 getFacilitators(),
-                getMeetingTemplates()
+                getMeetingTemplates(),
+                getMeetingWorkflows()
             ]);
             setAgents(agentsData);
             setFacilitators(facilitatorsData);
             setTemplates(templatesData);
+            setWorkflows(workflowsData);
 
             // デフォルト値設定
             if (facilitatorsData.length > 0) setFacilitatorId(facilitatorsData[0].id);
@@ -112,6 +119,8 @@ export default function NewMeetingPage() {
                 whiteboard,
                 facilitator_id: facilitatorId,
                 agent_ids: selectedAgentIds,
+                workflow_id: workflowId || undefined,
+                current_step: 0,
                 status: "pending"
             });
             router.push(`/meetings/${meetingId}`);
@@ -244,6 +253,62 @@ export default function NewMeetingPage() {
                                                 {facilitatorId === f.id && <CheckCircle size={18} className="text-blue-500" />}
                                             </div>
                                             <p className="text-xs text-gray-500 leading-relaxed italic">{f.description}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 🆕 ワークフロー選択 🔥 */}
+                            <div className="lg:col-span-5 space-y-6">
+                                <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2 px-2">
+                                    <Zap size={14} className="text-yellow-500" /> Meeting Workflow
+                                </h3>
+                                <div className="grid grid-cols-1 gap-3 max-h-[460px] overflow-y-auto pr-2 custom-scrollbar">
+                                    <div
+                                        onClick={() => setWorkflowId("")}
+                                        className={`
+                                            p-5 rounded-3xl cursor-pointer transition-all border-2
+                                            ${workflowId === ""
+                                                ? "bg-zinc-50 border-zinc-500 dark:bg-zinc-800 shadow-lg"
+                                                : "bg-gray-50 dark:bg-black/40 border-transparent hover:bg-gray-100 dark:hover:bg-zinc-800"
+                                            }
+                                        `}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <p className={`font-black text-base ${workflowId === "" ? "text-zinc-600 dark:text-zinc-300" : ""}`}>手動モード（自由議論）</p>
+                                            {workflowId === "" && <CheckCircle size={18} className="text-zinc-500" />}
+                                        </div>
+                                        <p className="text-xs text-gray-500 leading-relaxed italic">ワークフローを使用せず、手動でエージェントを動かします。</p>
+                                    </div>
+                                    {workflows.map(w => (
+                                        <div
+                                            key={w.id}
+                                            onClick={() => {
+                                                setWorkflowId(w.id);
+                                                // ワークフローのデフォルト設定を反映させる💅
+                                                setFacilitatorId(w.facilitator_id);
+                                                setSelectedAgentIds(w.agent_ids);
+                                            }}
+                                            className={`
+                                                p-5 rounded-3xl cursor-pointer transition-all border-2
+                                                ${workflowId === w.id
+                                                    ? "bg-yellow-50/50 border-yellow-500 dark:bg-yellow-900/10 shadow-lg shadow-yellow-500/10"
+                                                    : "bg-gray-50 dark:bg-black/40 border-transparent hover:bg-gray-100 dark:hover:bg-zinc-800"
+                                                }
+                                            `}
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <p className={`font-black text-base ${workflowId === w.id ? "text-yellow-600" : ""}`}>{w.name}</p>
+                                                {workflowId === w.id && <CheckCircle size={18} className="text-yellow-500" />}
+                                            </div>
+                                            <p className="text-xs text-gray-500 leading-relaxed italic mb-2">{w.description}</p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {w.steps.map((step, idx) => (
+                                                    <span key={idx} className="text-[10px] bg-white dark:bg-black/40 px-2 py-0.5 rounded-full border border-gray-100 dark:border-zinc-800 text-gray-400 font-bold">
+                                                        {step.type === 'speak' ? 'Speak' : step.type === 'parallel_speak' ? 'Parallel' : step.type === 'summary' ? 'Summary' : 'Intervention'}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

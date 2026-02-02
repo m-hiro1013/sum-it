@@ -33,7 +33,9 @@ import {
     Bot,
     Trash2,
     Type,
-    UserCheck
+    UserCheck,
+    Zap,
+    RefreshCw
 } from "lucide-react";
 
 export default function MeetingRoomPage() {
@@ -159,6 +161,59 @@ export default function MeetingRoomPage() {
             });
         } catch (error) {
             console.error(error);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleNextStep = async () => {
+        if (!meeting) return;
+        setIsProcessing(true);
+        try {
+            const response = await fetch(`/api/meetings/${meeting.id}/run/next`, {
+                method: "POST",
+            });
+            const result = await response.json();
+            if (!result.success) {
+                alert(`エラー発生: ${result.error}😭`);
+            } else {
+                setMeeting({
+                    ...meeting,
+                    current_step: result.current_step,
+                    status: result.status
+                });
+            }
+        } catch (error) {
+            console.error(error);
+            alert("通信エラーになっちゃった😭");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleResumeMeeting = async () => {
+        if (!meeting) return;
+        setIsProcessing(true);
+        try {
+            const response = await fetch(`/api/meetings/${meeting.id}/run/resume`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ whiteboard: editWhiteboard }),
+            });
+            const result = await response.json();
+            if (!result.success) {
+                alert(`再開エラー: ${result.error}😭`);
+            } else {
+                setMeeting({
+                    ...meeting,
+                    whiteboard: editWhiteboard,
+                    current_step: result.current_step,
+                    status: result.status
+                });
+            }
+        } catch (error) {
+            console.error(error);
+            alert("通信エラーになっちゃった😭");
         } finally {
             setIsProcessing(false);
         }
@@ -354,8 +409,21 @@ export default function MeetingRoomPage() {
                                 </Button>
                             )}
                             {meeting.status === "in_progress" && (
-                                <Button onClick={handleGenerateSummary} disabled={isProcessing} className="h-14 px-8 rounded-full text-lg font-black bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20">
-                                    {isProcessing ? <Loader2 className="animate-spin" /> : <><Flag size={20} className="mr-2" /> まとめる</>}
+                                <div className="flex gap-2">
+                                    {meeting.workflow_id ? (
+                                        <Button onClick={handleNextStep} disabled={isProcessing} className="h-14 px-8 rounded-full text-lg font-black bg-yellow-500 hover:bg-yellow-600 shadow-lg shadow-yellow-500/20 text-white">
+                                            {isProcessing ? <Loader2 className="animate-spin" /> : <><Zap size={20} className="mr-2" /> 次のステップ</>}
+                                        </Button>
+                                    ) : (
+                                        <Button onClick={handleGenerateSummary} disabled={isProcessing} className="h-14 px-8 rounded-full text-lg font-black bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20">
+                                            {isProcessing ? <Loader2 className="animate-spin" /> : <><Flag size={20} className="mr-2" /> まとめる</>}
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
+                            {meeting.status === "waiting" && (
+                                <Button onClick={handleResumeMeeting} disabled={isProcessing} className="h-14 px-8 rounded-full text-lg font-black bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20">
+                                    {isProcessing ? <Loader2 className="animate-spin" /> : <><RefreshCw size={20} className="mr-2" /> 再開する</>}
                                 </Button>
                             )}
                         </div>
@@ -386,15 +454,6 @@ function CheckCircle({ size, className }: { size: number, className?: string }) 
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
             <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-    );
-}
-
-function CheckCircle2({ size, className }: { size: number, className?: string }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-            <path d="m9 12 2 2 4-4" />
         </svg>
     );
 }
