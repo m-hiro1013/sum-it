@@ -17,8 +17,6 @@ import { Agent, AgentInput } from "../types/agent";
 import { Meeting, MeetingInput, Message } from "../types/meeting";
 import { LLMModel } from "../types/model";
 import { OutputStyle, OutputStyleInput } from "../types/style";
-import { Facilitator, FacilitatorInput } from "../types/facilitator";
-import { MeetingTemplate, MeetingTemplateInput } from "../types/template";
 import { MeetingWorkflow, MeetingWorkflowInput } from "../types/workflow";
 
 const AGENTS_COLLECTION = "agents";
@@ -26,8 +24,6 @@ const MEETINGS_COLLECTION = "meetings";
 const MESSAGES_COLLECTION = "messages";
 const MODELS_COLLECTION = "llm_models";
 const STYLES_COLLECTION = "output_styles";
-const FACILITATORS_COLLECTION = "facilitators";
-const TEMPLATES_COLLECTION = "meeting_templates";
 const WORKFLOWS_COLLECTION = "meeting_workflows";
 
 // --- Agents ---
@@ -79,45 +75,6 @@ export const updateOutputStyle = async (id: string, style: Partial<OutputStyleIn
 };
 export const deleteOutputStyle = async (id: string) => {
     await deleteDoc(doc(db, STYLES_COLLECTION, id));
-};
-
-// --- Facilitators ---
-export const getFacilitators = async (onlyActive = true): Promise<Facilitator[]> => {
-    const q = onlyActive
-        ? query(collection(db, FACILITATORS_COLLECTION), where("is_active", "==", true), orderBy("created_at", "asc"))
-        : query(collection(db, FACILITATORS_COLLECTION), orderBy("created_at", "asc"));
-    return (await getDocs(q)).docs.map(doc => ({ id: doc.id, ...doc.data() } as Facilitator));
-};
-export const createFacilitator = async (facilitator: FacilitatorInput) => {
-    return (await addDoc(collection(db, FACILITATORS_COLLECTION), { ...facilitator, created_at: serverTimestamp() })).id;
-};
-export const updateFacilitator = async (id: string, facilitator: Partial<FacilitatorInput>) => {
-    await updateDoc(doc(db, FACILITATORS_COLLECTION, id), facilitator);
-};
-export const getFacilitator = async (id: string): Promise<Facilitator | null> => {
-    const docRef = doc(db, FACILITATORS_COLLECTION, id);
-    const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as Facilitator) : null;
-};
-export const deleteFacilitator = async (id: string) => {
-    await deleteDoc(doc(db, FACILITATORS_COLLECTION, id));
-};
-
-// --- Meeting Templates ---
-export const getMeetingTemplates = async (onlyActive = true): Promise<MeetingTemplate[]> => {
-    const q = onlyActive
-        ? query(collection(db, TEMPLATES_COLLECTION), where("is_active", "==", true), orderBy("created_at", "asc"))
-        : query(collection(db, TEMPLATES_COLLECTION), orderBy("created_at", "asc"));
-    return (await getDocs(q)).docs.map(doc => ({ id: doc.id, ...doc.data() } as MeetingTemplate));
-};
-export const createMeetingTemplate = async (template: MeetingTemplateInput) => {
-    return (await addDoc(collection(db, TEMPLATES_COLLECTION), { ...template, created_at: serverTimestamp() })).id;
-};
-export const updateMeetingTemplate = async (id: string, template: Partial<MeetingTemplateInput>) => {
-    await updateDoc(doc(db, TEMPLATES_COLLECTION, id), template);
-};
-export const deleteMeetingTemplate = async (id: string) => {
-    await deleteDoc(doc(db, TEMPLATES_COLLECTION, id));
 };
 
 // --- Meetings ---

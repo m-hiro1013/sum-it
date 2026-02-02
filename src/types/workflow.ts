@@ -27,7 +27,9 @@ export interface MeetingWorkflow {
     id: string;
     name: string;
     description: string;
-    facilitator_id: string; // 使用する議長
+    // 進行指示（旧facilitatorから移行）
+    start_prompt: string;   // 🆕 会議開始時の全体指示
+    end_prompt: string;     // 🆕 サマリー作成時の指示
     agent_ids: string[];    // 使用するエージェント一覧（バリデーション用）
     steps: WorkflowStep[];
     is_active: boolean;

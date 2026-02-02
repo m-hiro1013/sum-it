@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
     getMeeting,
     getMeetingWorkflow,
-    getFacilitator,
+    // getFacilitator,  // ❌ 削除
     getAgent,
     addMessage,
     updateMeeting,
@@ -41,29 +41,29 @@ export async function POST(
             return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
         }
 
-        const facilitator = await getFacilitator(meeting.facilitator_id);
-        if (!facilitator) {
-            return NextResponse.json({ error: "Facilitator not found" }, { status: 404 });
-        }
+        // ❌ 削除: facilitator取得
+        // const facilitator = await getFacilitator(meeting.facilitator_id);
+        // if (!facilitator) {
+        //     return NextResponse.json({ error: "Facilitator not found" }, { status: 404 });
+        // }
 
         // 2. エージェントの収集（Map形式に変換）
+        // ワークフローに紐づくエージェントを使用
         const agentsMap = new Map<string, Agent>();
-        const agentPromises = meeting.agent_ids.map(async (id) => {
+        const agentPromises = workflow.agent_ids.map(async (id) => {
             const agent = await getAgent(id);
             if (agent) agentsMap.set(id, agent);
         });
         await Promise.all(agentPromises);
 
         // 3. メッセージ履歴の取得
-        // ※ lib/firestore.ts に getMessages が必要そうなので追加する想定
-        // とりあえず、ここでは最新のメッセージを取得する
         const messages = await getMessages(meetingId);
 
         // 4. 実行コンテキストの構築
         const context: ExecutionContext = {
             meeting,
             workflow,
-            facilitator,
+            // facilitator,  // ❌ 削除
             agents: agentsMap,
             messages,
             whiteboard: meeting.whiteboard,

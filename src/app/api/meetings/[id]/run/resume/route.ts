@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
     getMeeting,
     getMeetingWorkflow,
-    getFacilitator,
+    // getFacilitator,  // ❌ 削除
     getAgent,
     addMessage,
     updateMeeting,
@@ -56,14 +56,15 @@ export async function POST(
             return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
         }
 
-        const facilitator = await getFacilitator(meeting.facilitator_id);
-        if (!facilitator) {
-            return NextResponse.json({ error: "Facilitator not found" }, { status: 404 });
-        }
+        // ❌ 削除: facilitator取得
+        // const facilitator = await getFacilitator(meeting.facilitator_id);
+        // if (!facilitator) {
+        //     return NextResponse.json({ error: "Facilitator not found" }, { status: 404 });
+        // }
 
         // エージェントの収集
         const agentsMap = new Map<string, Agent>();
-        const agentPromises = meeting.agent_ids.map(async (id) => {
+        const agentPromises = workflow.agent_ids.map(async (id) => {
             const agent = await getAgent(id);
             if (agent) agentsMap.set(id, agent);
         });
@@ -76,7 +77,7 @@ export async function POST(
         const context: ExecutionContext = {
             meeting,
             workflow,
-            facilitator,
+            // facilitator,  // ❌ 削除
             agents: agentsMap,
             messages,
             whiteboard: meeting.whiteboard,

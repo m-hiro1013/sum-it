@@ -9,8 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import {
     getMeeting,
-    getAgents,
-    getFacilitators,
+    getMeetingWorkflow,
     subscribeToMessages,
     addMessage,
     updateMeeting,
@@ -18,7 +17,7 @@ import {
 } from "@/lib/firestore";
 import { Meeting, Message } from "@/types/meeting";
 import { Agent } from "@/types/agent";
-import { Facilitator } from "@/types/facilitator";
+import { MeetingWorkflow } from "@/types/workflow";
 import {
     Loader2,
     Play,
@@ -33,7 +32,6 @@ import {
     Bot,
     Trash2,
     Type,
-    UserCheck,
     Zap,
     RefreshCw
 } from "lucide-react";
@@ -42,10 +40,7 @@ export default function MeetingRoomPage() {
     const { id } = useParams();
     const router = useRouter();
     const [meeting, setMeeting] = useState<Meeting | null>(null);
-
-    // マスタデータ
-    const [allAgents, setAllAgents] = useState<Agent[]>([]);
-    const [allFacilitators, setAllFacilitators] = useState<Facilitator[]>([]);
+    const [workflow, setWorkflow] = useState<MeetingWorkflow | null>(null);
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -56,34 +51,27 @@ export default function MeetingRoomPage() {
     // 編集用ステート
     const [editTitle, setEditTitle] = useState("");
     const [editWhiteboard, setEditWhiteboard] = useState("");
-    const [editFacilitatorId, setEditFacilitatorId] = useState("");
-    const [editAgentIds, setEditAgentIds] = useState<string[]>([]);
 
     // リアルタイム・メッセージ購読
     useEffect(() => {
         if (typeof id !== "string") return;
 
         const fetchData = async () => {
-            const [meetingData, agentsData, facilitatorsData] = await Promise.all([
-                getMeeting(id),
-                getAgents(),
-                getFacilitators(false)
-            ]);
+            const meetingData = await getMeeting(id);
 
             if (!meetingData) {
                 router.push("/meetings");
                 return;
             }
 
+            const workflowData = await getMeetingWorkflow(meetingData.workflow_id);
+
             setMeeting(meetingData);
-            setAllAgents(agentsData);
-            setAllFacilitators(facilitatorsData);
+            setWorkflow(workflowData);
 
             // 編集用初期値
             setEditTitle(meetingData.title);
             setEditWhiteboard(meetingData.whiteboard);
-            setEditFacilitatorId(meetingData.facilitator_id);
-            setEditAgentIds(meetingData.agent_ids);
 
             setIsLoading(false);
         };
@@ -109,8 +97,6 @@ export default function MeetingRoomPage() {
             const updateData = {
                 title: editTitle,
                 whiteboard: editWhiteboard,
-                facilitator_id: editFacilitatorId,
-                agent_ids: editAgentIds
             };
 
             await updateMeeting(meeting.id, updateData);
@@ -138,26 +124,17 @@ export default function MeetingRoomPage() {
         }
     };
 
-    const handleToggleAgent = (agentId: string) => {
-        setEditAgentIds(prev =>
-            prev.includes(agentId)
-                ? prev.filter(id => id !== agentId)
-                : [...prev, agentId]
-        );
-    };
-
     const handleStartMeeting = async () => {
-        if (!meeting) return;
+        if (!meeting || !workflow) return;
         setIsProcessing(true);
         try {
             await updateMeeting(meeting.id, { status: "in_progress" });
             setMeeting({ ...meeting, status: "in_progress" });
-            const currentFacilitator = allFacilitators.find(f => f.id === editFacilitatorId);
             await addMessage({
                 meeting_id: meeting.id,
                 agent_id: "system",
                 agent_name: "SYSTEM",
-                content: `会議を開始しました。議題: ${meeting.topic}\n議長(${currentFacilitator?.name})の指示に基づいて議論を進めてください。`,
+                content: `会議を開始しました。議題: ${meeting.topic}\nワークフロー「${workflow.name}」に従って進行します。💅✨`,
             });
         } catch (error) {
             console.error(error);
@@ -252,14 +229,12 @@ export default function MeetingRoomPage() {
         );
     }
 
-    const selectedAgentsCount = editAgentIds.length;
-
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-white flex flex-col">
             <Header />
 
             <div className="flex-1 flex overflow-hidden">
-                {/* サイドバー: フルCRUD対応版💅🛡️ */}
+                {/* サイドバー: ワークフローベースに簡素化💅 */}
                 <aside className="w-80 lg:w-[400px] border-r border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-y-auto hidden md:block custom-scrollbar">
                     <div className="p-6 space-y-8">
                         <div className="space-y-4">
@@ -285,62 +260,30 @@ export default function MeetingRoomPage() {
 
                         <div className="space-y-3">
                             <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
-                                <UserCheck size={14} /> 議長スタイルを選択
+                                <Zap size={14} className="text-yellow-500" /> 実行中ワークフロー
                             </h3>
-                            <select
-                                value={editFacilitatorId}
-                                onChange={(e) => setEditFacilitatorId(e.target.value)}
-                                className="w-full h-12 rounded-xl bg-gray-50 dark:bg-black border-none text-sm font-bold focus:ring-2 ring-blue-500/20 px-4 transition-all"
-                            >
-                                {allFacilitators.map(f => (
-                                    <option key={f.id} value={f.id}>{f.name}</option>
-                                ))}
-                            </select>
-                            <p className="text-[11px] text-gray-500 italic px-2">
-                                {allFacilitators.find(f => f.id === editFacilitatorId)?.description}
-                            </p>
+                            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-black/40 border border-gray-100 dark:border-zinc-800">
+                                <p className="text-sm font-black text-gray-800 dark:text-gray-200">{workflow?.name || "---"}</p>
+                                <p className="text-[10px] text-gray-500 mt-1 leading-relaxed">{workflow?.description}</p>
+                                <div className="flex flex-wrap gap-1 mt-3">
+                                    {workflow?.steps.map((step, idx) => (
+                                        <span key={idx} className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${meeting.current_step === idx ? "bg-blue-500 text-white" : "bg-gray-100 dark:bg-zinc-800 text-gray-400"}`}>
+                                            {step.type.charAt(0)}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
 
                         <div className="space-y-4">
-                            <div className="flex justify-between items-end">
-                                <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
-                                    <Users size={14} /> 参加メンバー管理
-                                </h3>
-                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md uppercase">
-                                    {selectedAgentsCount} Selected
-                                </span>
-                            </div>
-                            <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                                {allAgents.map(agent => (
-                                    <div
-                                        key={agent.id}
-                                        onClick={() => handleToggleAgent(agent.id)}
-                                        className={`
-                      flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all border-2
-                      ${editAgentIds.includes(agent.id)
-                                                ? "bg-blue-50/50 border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/30"
-                                                : "bg-transparent border-transparent hover:bg-gray-50 dark:hover:bg-zinc-800"
-                                            }
-                    `}
-                                    >
-                                        <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-zinc-800">
-                                            {agent.avatar_url ? (
-                                                <img src={agent.avatar_url} alt={agent.name} className="h-full w-full object-cover" />
-                                            ) : (
-                                                <div className="h-full w-full flex items-center justify-center text-gray-400"><Bot size={18} /></div>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className={`text-sm font-bold truncate ${editAgentIds.includes(agent.id) ? "text-blue-600 dark:text-blue-400" : ""}`}>
-                                                {agent.name}
-                                            </p>
-                                            <p className="text-[10px] text-gray-500 truncate uppercase tracking-tighter">{agent.role}</p>
-                                        </div>
-                                        {editAgentIds.includes(agent.id) ? (
-                                            <CheckCircle size={18} className="text-blue-600" />
-                                        ) : (
-                                            <div className="h-[18px] w-[18px] rounded-full border-2 border-gray-200 dark:border-zinc-700" />
-                                        )}
+                            <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
+                                <Users size={14} /> 参加メンバー
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {workflow?.agent_ids.map(agentId => (
+                                    <div key={agentId} className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-zinc-800/50 rounded-xl border border-gray-100 dark:border-zinc-800">
+                                        <Bot size={14} className="text-blue-500" />
+                                        <span className="text-[11px] font-bold text-gray-600 dark:text-gray-400">{agentId}</span>
                                     </div>
                                 ))}
                             </div>
@@ -381,17 +324,16 @@ export default function MeetingRoomPage() {
                             </div>
                         )}
                         {messages.map((m) => {
-                            const agent = allAgents.find(a => a.id === m.agent_id);
                             const isSystem = m.agent_id === "system";
                             return (
                                 <div key={m.id} className={`flex gap-4 ${isSystem ? "justify-center" : ""}`}>
                                     {!isSystem && (
-                                        <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-white dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900">
-                                            {agent?.avatar_url ? <img src={agent.avatar_url} alt={m.agent_name} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-gray-400"><Bot size={24} /></div>}
+                                        <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-white dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900 flex items-center justify-center text-gray-400">
+                                            <Bot size={24} />
                                         </div>
                                     )}
                                     <div className={`max-w-[80%] ${isSystem ? "w-full" : ""}`}>
-                                        {!isSystem && <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">{m.agent_name} • {agent?.role}</p>}
+                                        {!isSystem && <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">{m.agent_name}</p>}
                                         <div className={`p-5 rounded-3xl shadow-sm text-sm ${isSystem ? "bg-gray-100 dark:bg-zinc-900/50 text-gray-500 italic text-center text-xs" : "bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800"}`}>
                                             {m.content}
                                         </div>
@@ -410,15 +352,9 @@ export default function MeetingRoomPage() {
                             )}
                             {meeting.status === "in_progress" && (
                                 <div className="flex gap-2">
-                                    {meeting.workflow_id ? (
-                                        <Button onClick={handleNextStep} disabled={isProcessing} className="h-14 px-8 rounded-full text-lg font-black bg-yellow-500 hover:bg-yellow-600 shadow-lg shadow-yellow-500/20 text-white">
-                                            {isProcessing ? <Loader2 className="animate-spin" /> : <><Zap size={20} className="mr-2" /> 次のステップ</>}
-                                        </Button>
-                                    ) : (
-                                        <Button onClick={handleGenerateSummary} disabled={isProcessing} className="h-14 px-8 rounded-full text-lg font-black bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20">
-                                            {isProcessing ? <Loader2 className="animate-spin" /> : <><Flag size={20} className="mr-2" /> まとめる</>}
-                                        </Button>
-                                    )}
+                                    <Button onClick={handleNextStep} disabled={isProcessing} className="h-14 px-8 rounded-full text-lg font-black bg-yellow-500 hover:bg-yellow-600 shadow-lg shadow-yellow-500/20 text-white">
+                                        {isProcessing ? <Loader2 className="animate-spin" /> : <><Zap size={20} className="mr-2" /> 次のステップ</>}
+                                    </Button>
                                 </div>
                             )}
                             {meeting.status === "waiting" && (
@@ -438,7 +374,7 @@ export default function MeetingRoomPage() {
                                 disabled={isProcessing}
                                 className="h-14 px-8 rounded-full text-lg font-black flex items-center gap-3 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                             >
-                                {isProcessing ? <Loader2 className="animate-spin" /> : <><Save size={24} /> 保存・一括更新</>}
+                                {isProcessing ? <Loader2 className="animate-spin" /> : <><Save size={24} /> 会議情報を保存</>}
                             </Button>
                         </div>
                     </div>
@@ -448,8 +384,8 @@ export default function MeetingRoomPage() {
     );
 }
 
-// 🆕 カスタムアイコンコンポーネント
-function CheckCircle({ size, className }: { size: number, className?: string }) {
+// 🆕 カスタムアイコンコンポーネント (CheckCircleはLucideにもあるが、カスタム版を維持)
+function MyCheckCircle({ size, className }: { size: number, className?: string }) {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />

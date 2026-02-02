@@ -4,26 +4,26 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
-import { getMeetings, getFacilitators } from "@/lib/firestore";
+import { getMeetings, getMeetingWorkflows } from "@/lib/firestore";
 import { Meeting } from "@/types/meeting";
-import { Facilitator } from "@/types/facilitator";
-import { Plus, MessageSquare, Calendar, Clock, ChevronRight, Loader2, Monitor, CheckCircle2, PlayCircle, AlertCircle, Terminal } from "lucide-react";
+import { MeetingWorkflow } from "@/types/workflow";
+import { Plus, MessageSquare, Calendar, Clock, ChevronRight, Loader2, Monitor, CheckCircle2, PlayCircle, AlertCircle, Zap } from "lucide-react";
 import Link from "next/link";
 
 export default function MeetingsPage() {
     const [meetings, setMeetings] = useState<Meeting[]>([]);
-    const [facilitators, setFacilitators] = useState<Facilitator[]>([]);
+    const [workflows, setWorkflows] = useState<MeetingWorkflow[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [meetingsData, facilitatorsData] = await Promise.all([
+                const [meetingsData, workflowsData] = await Promise.all([
                     getMeetings(),
-                    getFacilitators(false)
+                    getMeetingWorkflows()
                 ]);
                 setMeetings(meetingsData);
-                setFacilitators(facilitatorsData);
+                setWorkflows(workflowsData);
             } catch (error) {
                 console.error("Failed to fetch meetings", error);
             } finally {
@@ -37,13 +37,14 @@ export default function MeetingsPage() {
         switch (status) {
             case "completed": return <CheckCircle2 size={16} className="text-green-500" />;
             case "in_progress": return <PlayCircle size={16} className="text-blue-500 animate-pulse" />;
+            case "waiting": return <Clock size={16} className="text-yellow-500" />;
             case "error": return <AlertCircle size={16} className="text-red-500" />;
             default: return <Clock size={16} className="text-gray-400" />;
         }
     };
 
-    const getFacilitatorName = (id: string) => {
-        return facilitators.find(f => f.id === id)?.name || "不明な議長";
+    const getWorkflowName = (id: string) => {
+        return workflows.find(w => w.id === id)?.name || "不明なワークフロー";
     };
 
     const formatDate = (timestamp: any) => {
@@ -113,16 +114,12 @@ export default function MeetingsPage() {
                                             <h3 className="text-xl font-bold truncate group-hover:text-blue-600 transition-colors">{meeting.title || "無題の会議"}</h3>
                                             <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-gray-500">
                                                 <div className="flex items-center gap-1">
-                                                    <Terminal size={12} className="text-gray-400" />
-                                                    <span className="font-medium text-gray-700 dark:text-gray-300">{getFacilitatorName(meeting.facilitator_id)}</span>
+                                                    <Zap size={12} className="text-yellow-500" />
+                                                    <span className="font-medium text-gray-700 dark:text-gray-300">{getWorkflowName(meeting.workflow_id)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     <Calendar size={12} />
                                                     <span>{formatDate(meeting.created_at)}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <Plus size={12} className="rotate-45" />
-                                                    <span>{meeting.agent_ids.length} Agents</span>
                                                 </div>
                                             </div>
                                         </div>

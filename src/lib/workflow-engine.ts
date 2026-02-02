@@ -1,7 +1,6 @@
 import { callLLM } from "./llm";
 import { Agent } from "../types/agent";
 import { Meeting, Message } from "../types/meeting";
-import { Facilitator } from "../types/facilitator";
 import { MeetingWorkflow, WorkflowStep, SpeakStep, ParallelSpeakStep, SummaryStep, UserInterventionStep } from "../types/workflow";
 import { OutputStyle } from "../types/style";
 import { getOutputStyle } from "./firestore";
@@ -13,7 +12,7 @@ import { getOutputStyle } from "./firestore";
 export interface ExecutionContext {
     meeting: Meeting;
     workflow: MeetingWorkflow;
-    facilitator: Facilitator;
+    // facilitator: Facilitator;      // ❌ 削除
     agents: Map<string, Agent>;      // agent_id -> Agent
     messages: Message[];             // これまでの全発言
     whiteboard: string;              // 現在のホワイトボード
@@ -84,7 +83,7 @@ async function handleSpeak(
     step: SpeakStep,
     context: ExecutionContext
 ): Promise<ExecutionResult> {
-    const { agents, meeting, messages, whiteboard, facilitator } = context;
+    const { agents, meeting, messages, whiteboard, workflow } = context;
 
     // 1. エージェント取得
     const agent = agents.get(step.agent_id);
@@ -109,7 +108,7 @@ async function handleSpeak(
     }
 
     // 3. システムプロンプト構築
-    const systemPrompt = buildSystemPrompt(agent, style, facilitator);
+    const systemPrompt = buildSystemPrompt(agent, style, workflow.start_prompt);
 
     // 4. ユーザーメッセージ構築
     const userMessage = buildUserMessage(
@@ -155,7 +154,7 @@ async function handleParallelSpeak(
     step: ParallelSpeakStep,
     context: ExecutionContext
 ): Promise<ExecutionResult> {
-    const { agents, meeting, messages, whiteboard, facilitator } = context;
+    const { agents, meeting, messages, whiteboard, workflow } = context;
 
     try {
         const promises = step.agent_ids.map(async (agentId) => {
@@ -169,7 +168,7 @@ async function handleParallelSpeak(
                 throw new Error(`Output style not found for agent ${agent.name}`);
             }
 
-            const systemPrompt = buildSystemPrompt(agent, style, facilitator);
+            const systemPrompt = buildSystemPrompt(agent, style, workflow.start_prompt);
             const userMessage = buildUserMessage(
                 meeting.topic,
                 whiteboard,
@@ -215,7 +214,7 @@ async function handleSummary(
     _step: SummaryStep,
     context: ExecutionContext
 ): Promise<ExecutionResult> {
-    const { meeting, messages, whiteboard, facilitator } = context;
+    const { meeting, messages, whiteboard, workflow } = context;
 
     // 1. これまでの全発言を整形
     const history = messages.length > 0
@@ -226,8 +225,8 @@ async function handleSummary(
     const systemPrompt = `あなたは会議の議長（ファシリテーター）です。
 以下の指示に従って、これまでの議論を論理的かつ建設的にまとめてください。
 
-## 議長としての指示
-${facilitator.end_prompt}
+## まとめ作成の指示
+${workflow.end_prompt}
 
 ---
 常に中立で、かつ次に繋がる前向きなまとめを心がけてください。`;
@@ -259,7 +258,7 @@ ${history}
             messages: [{
                 content: response,
                 agent_id: "facilitator",
-                agent_name: `議長（${facilitator.name}）`,
+                agent_name: `議長（${workflow.name}）`,
             }],
         };
     } catch (error: any) {
@@ -301,7 +300,7 @@ async function handleUserIntervention(
 function buildSystemPrompt(
     agent: Agent,
     style: OutputStyle,
-    facilitator: Facilitator
+    startPrompt: string
 ): string {
     return `あなたは「${agent.name}」という名前の会議参加者です。
 
@@ -313,8 +312,8 @@ ${agent.persona}
 
 ${agent.prompt ? `## 追加の指示\n${agent.prompt}` : ""}
 
-## 議長からの全体指示
-${facilitator.start_prompt}
+## 会議の進行ルール
+${startPrompt}
 
 ## 出力形式・スタイル
 ${style.prompt_segment}

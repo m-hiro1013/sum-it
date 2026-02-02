@@ -3,11 +3,20 @@ export interface Meeting {
     title: string;
     topic: string; // 議題
     whiteboard: string; // 共通認識
-    facilitator_id: string; // 使用する議長のID
-    agent_ids: string[]; // 参加エージェントのID一覧
-    workflow_id?: string; // 🆕 使用するワークフローのID
-    current_step?: number; // 🆕 現在のステップ番号
-    status: "pending" | "in_progress" | "waiting" | "completed" | "error"; // 🆕 "waiting" を追加！
+
+    // ワークフロー関連
+    workflow_id: string; // 使用するワークフローのID
+    current_step: number; // 現在のステップ番号
+
+    // プロンプト上書き（オプション）
+    start_prompt_override?: string; // 🆕 会議開始時の全体指示を上書き
+    end_prompt_override?: string;   // 🆕 サマリー作成時の指示を上書き
+
+    // 削除
+    // facilitator_id: string;  // ❌ 削除
+    // agent_ids: string[];     // ❌ 削除（workflowから取得）
+
+    status: "pending" | "in_progress" | "waiting" | "completed" | "error";
     final_conclusion?: string; // 議長の総評（サマリー）
     created_at: any;
     completed_at?: any;
