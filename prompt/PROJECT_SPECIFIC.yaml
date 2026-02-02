@@ -15,19 +15,22 @@ project:
     「Summarize it（まとめて！）」から名付けた、
     複数のAIエージェントによる会議シミュレーション＆意見集約ツール。
     自分だけのAIエージェントを事前定義し、議題に対して多角的な意見を得ることができる。
+    議長（Facilitator）システムにより、議論の方向性も自由自在に制御可能。
 
   purpose:
     primary: "一人で考える偏りを防ぎ、複数の視点から効率的に意見を集約する"
     secondary:
       - "エージェントの事前定義によるプロンプト作成の手間削減"
-      - "会議結果の自動サマリー生成"
-      - "個人ツールの枠を超えた将来的なSaaS化への布石"
+      - "出力形式（スタイル）の独立管理によるプロンプトの再利用"
+      - "議長ロジックによる議論の高度な自動進行とサマリー生成"
+      - "ホワイトボードを通じた情報のリアルタイム同期と構造化"
 
   success_criteria:
-    - "Firebase Firestoreを使用したエージェントのCRUDが完璧に動作する"
-    - "OpenAI/Anthropic/Google AIの複数LLMと連携できる"
-    - "会議のリアルタイム表示とサマリー集約が正常に行われる"
-    - "Next.js 14 App Routerによる高速で快適なUI提供"
+    - "Firebase Firestoreを使用したエージェント・議長・スタイルのCRUDが完璧に動作する"
+    - "最新モデル（GPT-5, Claude-4.5, Gemini-3等）と柔軟に連携できる"
+    - "会議室でホワイトボードがリアルタイムに同期される"
+    - "議長の指示に基づく高度な要約が自動生成される"
+    - "会議ログをMarkdown形式で完璧にエクスポートできる"
 
 user:
   developer:
@@ -37,25 +40,30 @@ user:
 tech_stack:
   language: "TypeScript"
   framework: "Next.js 14+ (App Router)"
-  styling: "Tailwind CSS"
-  database: "Firebase Firestore"
+  styling: "Vanilla CSS + Tailwind CSS (Zen-Tech Design Aesthetic)"
+  database: "Firebase Firestore + Storage"
   package_manager: "pnpm"
-  infrastructure: "Vercel"
   ai_apis:
-    - "OpenAI API"
-    - "Anthropic API"
-    - "Google AI SDK"
+    - "OpenAI API (Latest)"
+    - "Anthropic API (Latest)"
+    - "Google AI SDK (Latest)"
 
 phases:
   - phase: 1
-    name: "エージェント管理"
-    description: "エージェントのCRUD機能実装"
+    name: "基盤構築 & エージェント管理"
+    description: "エージェント、スタイル、LLMモデルの管理基盤実装"
+    status: "done"
   - phase: 2
-    name: "会議機能"
-    description: "LLM連携と会議実行ロジックの実装"
+    name: "会議室（UI・議長基盤）"
+    description: "議長管理と会議室のリアルタイムUIの実装"
+    status: "done"
   - phase: 3
-    name: "会議履歴・管理"
-    description: "履歴閲覧とエクスポート機能"
+    name: "AI会議実行エンジン"
+    description: "エージェントの発言ターン制御とLLM連携の実装"
+    status: "in_progress"
   - phase: 4
-    name: "高度な機能"
-    description: "認証、並列発言、投票機能など"
+    name: "履歴管理 & テンプレート"
+    description: "会議テンプレート機能と過去ログの高度な閲覧機能"
+  - phase: 5
+    name: "高度な連携"
+    description: "並列発言、ファイル添付、API経由の外部データ連携など"

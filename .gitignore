@@ -30,3 +30,6 @@ ui-debug.log
 
 # Temporary
 COMMIT_MSG.txt
+
+# Firebase Service Account Key
+*-firebase-adminsdk-*.json
