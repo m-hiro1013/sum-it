@@ -9,7 +9,7 @@
 
 architecture:
   version: "2.0"
-  last_updated: "2026-02-02T13:40:00+09:00"
+  last_updated: "2026-02-02T23:15:00+09:00"
 
   project:
     name: "sum-it"
@@ -47,4 +47,19 @@ architecture:
         - id: "F-Workflow-Centric-UI"
           name: "Workflow-Centric Meeting Creation UI"
           description: "ワークフロー選択を核としたシンプルな会議作成画面。プロンプト上書き機能付き。"
+          status: "done"
+    phase 5:
+      name: "LLM連携の高度化 & エージェント強化"
+      features:
+        - id: "F-Agent-Temperature"
+          name: "Agent-Specific Temperature Control"
+          description: "エージェントごとにLLMの創造性(temperature)を設定可能に。UIからの調整にも対応。"
+          status: "done"
+        - id: "F-Context-Rich-History"
+          name: "Contextual Message History"
+          description: "発言時の役割(role)とステップ番号(step_number)を履歴に保持し、AIの文脈理解度を向上。"
+          status: "done"
+        - id: "F-Agent-Centric-Summary"
+          name: "Agent-Centric Summarization"
+          description: "議長固定から、特定のエージェントが人格を保ったまま議論をまとめられるように拡張。"
           status: "done"

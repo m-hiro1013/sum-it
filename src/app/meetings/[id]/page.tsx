@@ -134,6 +134,8 @@ export default function MeetingRoomPage() {
                 meeting_id: meeting.id,
                 agent_id: "system",
                 agent_name: "SYSTEM",
+                agent_role: "system", // 🆕 追加
+                step_number: 0,      // 🆕 追加
                 content: `会議を開始しました。議題: ${meeting.topic}\nワークフロー「${workflow.name}」に従って進行します。💅✨`,
             });
         } catch (error) {
@@ -332,8 +334,24 @@ export default function MeetingRoomPage() {
                                             <Bot size={24} />
                                         </div>
                                     )}
-                                    <div className={`max-w-[80%] ${isSystem ? "w-full" : ""}`}>
-                                        {!isSystem && <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">{m.agent_name}</p>}
+                                    <div className={`max-w-[80%] ${isSystem ? "w-full" : "relative group"}`}>
+                                        {!isSystem && (
+                                            <div className="flex items-center justify-between mb-1 ml-1 px-1">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{m.agent_name}</p>
+                                                    {m.agent_role && (
+                                                        <span className="text-[8px] font-black px-1.5 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-500 rounded uppercase tracking-tighter border border-gray-200 dark:border-zinc-700">
+                                                            {m.agent_role}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {m.step_number !== undefined && (
+                                                    <span className="text-[9px] font-mono text-gray-300 dark:text-gray-600 font-bold">
+                                                        #{m.step_number}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                         <div className={`p-5 rounded-3xl shadow-sm text-sm ${isSystem ? "bg-gray-100 dark:bg-zinc-900/50 text-gray-500 italic text-center text-xs" : "bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800"}`}>
                                             {m.content}
                                         </div>

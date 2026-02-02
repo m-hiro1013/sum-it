@@ -22,6 +22,7 @@ export interface StepResult {
     content: string;
     agent_id: string;
     agent_name: string;
+    agent_role: string;  // 🆕 追加
 }
 
 export interface ExecutionResult {
@@ -124,6 +125,7 @@ async function handleSpeak(
             provider: agent.llm as "openai" | "anthropic" | "google",
             model: agent.model,
             systemPrompt: systemPrompt,
+            temperature: agent.temperature ?? 0.7,  // 🆕 追加
         });
 
         // 6. 結果を返す
@@ -134,6 +136,7 @@ async function handleSpeak(
                 content: response,
                 agent_id: agent.id,
                 agent_name: agent.name,
+                agent_role: agent.role,  // 🆕 追加
             }],
         };
     } catch (error: any) {
@@ -180,12 +183,14 @@ async function handleParallelSpeak(
                 provider: agent.llm as "openai" | "anthropic" | "google",
                 model: agent.model,
                 systemPrompt: systemPrompt,
+                temperature: agent.temperature ?? 0.7,  // 🆕 追加
             });
 
             return {
                 content: response,
                 agent_id: agent.id,
                 agent_name: agent.name,
+                agent_role: agent.role,  // 🆕 追加
             };
         });
 
@@ -211,45 +216,33 @@ async function handleParallelSpeak(
  * 🆕 議長がこれまでの議論をまとめる
  */
 async function handleSummary(
-    _step: SummaryStep,
+    step: SummaryStep,
     context: ExecutionContext
 ): Promise<ExecutionResult> {
-    const { meeting, messages, whiteboard, workflow } = context;
+    const { agents, meeting, messages, whiteboard, workflow } = context;
 
-    // 1. これまでの全発言を整形
-    const history = messages.length > 0
-        ? messages.map(m => `【${m.agent_name}】\n${m.content}`).join("\n\n")
-        : "（議論は行われませんでした）";
+    // 🆕 サマリー担当エージェントを取得
+    const agent = agents.get(step.agent_id);
+    if (!agent) {
+        return {
+            success: false,
+            status: "in_progress",
+            messages: [],
+            error: `Summary agent not found: ${step.agent_id}`,
+        };
+    }
 
-    // 2. システムプロンプト（議長専用💅）
-    const systemPrompt = `あなたは会議の議長（ファシリテーター）です。
-以下の指示に従って、これまでの議論を論理的かつ建設的にまとめてください。
-
-## まとめ作成の指示
-${workflow.end_prompt}
-
----
-常に中立で、かつ次に繋がる前向きなまとめを心がけてください。`;
-
-    // 3. ユーザーメッセージ
-    const userMessage = `## 会議の議題
-${meeting.topic}
-
-## ホワイトボード（これまでの合意事項・共有情報）
-${whiteboard || "（特になし）"}
-
-## これまでのすべての発言履歴
-${history}
-
----
-上記の議論を踏まえて、議長として「結論サマリー」を生成してください。`;
+    // 🆕 新しいプロンプトビルダーを使用
+    const systemPrompt = buildSummarySystemPrompt(agent, workflow.end_prompt);
+    const userMessage = buildSummaryUserMessage(meeting.topic, whiteboard, messages);
 
     try {
-        // 4. LLM呼び出し（議長は安定の GPT-4o を使用）
+        // 🆕 エージェントのLLM設定を使用
         const response = await callLLM(userMessage, {
-            provider: "openai",
-            model: "gpt-4o",
+            provider: agent.llm as "openai" | "anthropic" | "google",
+            model: agent.model,
             systemPrompt: systemPrompt,
+            temperature: agent.temperature ?? 0.7,
         });
 
         return {
@@ -257,8 +250,9 @@ ${history}
             status: "completed", // サマリーが出たら会議終了！🏁
             messages: [{
                 content: response,
-                agent_id: "facilitator",
-                agent_name: `議長（${workflow.name}）`,
+                agent_id: agent.id,
+                agent_name: agent.name,
+                agent_role: agent.role,  // 🆕 追加
             }],
         };
     } catch (error: any) {
@@ -289,8 +283,86 @@ async function handleUserIntervention(
             content: step.label || "ユーザーの入力を待っています... ホワイトボードを更新してください。💅✨",
             agent_id: "system",
             agent_name: "システム",
+            agent_role: "system", // 🆕 追加
         }],
     };
+}
+
+// ==========================================
+// 履歴フォーマッター
+// ==========================================
+
+/**
+ * メッセージ履歴を構造化フォーマットに変換
+ */
+function formatMessageHistory(messages: Message[]): string {
+    if (messages.length === 0) {
+        return "（まだ発言はありません）";
+    }
+
+    return messages.map(m => {
+        // 後方互換性：古いデータにはagent_role, step_numberがない可能性
+        const role = m.agent_role || "不明";
+        const step = m.step_number !== undefined ? m.step_number : "?";
+
+        return `【発言者】${m.agent_name}
+【発言者の役割】${role}
+【発言ステップ】${step}
+【内容】
+${m.content}`;
+    }).join("\n\n---\n\n");
+}
+
+// ==========================================
+// サマリー用プロンプトビルダー
+// ==========================================
+
+/**
+ * サマリー生成用のシステムプロンプトを構築
+ */
+function buildSummarySystemPrompt(
+    agent: Agent,
+    endPrompt: string
+): string {
+    return `あなたは「${agent.name}」という名前の会議参加者です。
+今回、あなたは会議のまとめ役を担当します。
+
+## あなたの性格・設定
+${agent.persona}
+
+${agent.prompt ? `## 追加の指示\n${agent.prompt}` : ""}
+
+## まとめ作成の指示
+${endPrompt}
+
+## 出力の長さについて
+出力の長さに制限はありません。議論の内容を網羅的にまとめてください。
+
+---
+上記の設定を遵守して、議論のまとめを作成してください。`;
+}
+
+/**
+ * サマリー生成用のユーザーメッセージを構築
+ */
+function buildSummaryUserMessage(
+    topic: string,
+    whiteboard: string,
+    messages: Message[]
+): string {
+    const history = formatMessageHistory(messages);
+
+    return `## 会議の議題
+${topic}
+
+## ホワイトボード（これまでの合意事項・共有情報）
+${whiteboard || "（特になし）"}
+
+## これまでの会議記録
+${history}
+
+---
+上記の議論を踏まえて、まとめを作成してください。`;
 }
 
 // ==========================================
@@ -318,6 +390,9 @@ ${startPrompt}
 ## 出力形式・スタイル
 ${style.prompt_segment}
 
+## 出力の長さについて
+出力の長さに制限はありません。議論に必要な内容を過不足なく記述してください。
+
 ---
 上記の設定を遵守して、議論に貢献してください。`;
 }
@@ -328,10 +403,8 @@ function buildUserMessage(
     messages: Message[],
     role: string
 ): string {
-    // これまでの発言を整形（CONTEXT!）
-    const history = messages.length > 0
-        ? messages.map(m => `【${m.agent_name}】\n${m.content}`).join("\n\n")
-        : "（まだ発言はありません）";
+    // 🆕 新しいフォーマッターを使用
+    const history = formatMessageHistory(messages);
 
     return `## 会議の議題
 ${topic}
@@ -343,5 +416,6 @@ ${whiteboard || "（特に書き込みはありません）"}
 ${history}
 
 ---
-あなたは「${role}」として、この議論の流れを踏まえ、次に述べるべき意見や質問を生成してください。`;
+あなたは「${role}」として、この議論の流れを踏まえ、次に述べるべき意見や質問を生成してください。
+出力の長さに制限はありません。必要に応じて詳細に記述してください。`;
 }

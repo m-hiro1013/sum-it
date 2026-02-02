@@ -32,6 +32,8 @@ agents:
 assignments:
   current_session:
     - agent: "orchestrator"
-      task: "sum-it プロジェクトのセットアップ"
+      task: "LLM連携の高度化とエージェント強化の全体統制"
     - agent: "coder"
-      task: "Next.js プロジェクト初期化"
+      task: "型定義、バックエンドAPI、フロントエンドUIの各実装"
+    - agent: "dbmanager"
+      task: "DATABASE.md および prompt フォルダ全書類の同期管理"

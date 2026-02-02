@@ -29,7 +29,7 @@ export interface ChatOptions {
 }
 
 export async function callLLM(message: string, options: ChatOptions): Promise<string> {
-    const { provider, model, systemPrompt, maxTokens = 1000, temperature = 0.7 } = options;
+    const { provider, model, systemPrompt, maxTokens = 4096, temperature = 0.7 } = options;
 
     try {
         switch (provider) {

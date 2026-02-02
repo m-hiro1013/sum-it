@@ -1,78 +1,45 @@
-# =====================================
-# 💾 WORKFLOW.yaml
-# =====================================
-#
-# プロジェクト: sum-it
-# セッション間で情報を保持するためのセーブデータ。
-#
-# =====================================
-
 workflow:
-  version: "2.0"
-  last_updated: "2026-02-02T13:40:00+09:00"
-
+  last_updated: "2026-02-02"
   last_session_summary: |
     【今回のセッションでやったこと】
-    - ワークフロー統合リファクタリングの完遂 ✅🛡️🚀
-        - 議長 (Facilitator) とテンプレート (Template) をワークフローに完全統合。
-        - 冗長なデータ構造・関数の削除（Cycle 8: お掃除フェーズ完了）。
-    - 会議作成UIのワークフロー中心設計へのリニューアル 🎨✨
-    - 実行エンジンと進行APIの調整。
-    - Headerからの不要リンク削除。
-    - GitHub (m-hiro1013/sum-it) への最新版Push確認。
-
+    - LLM調整機能の実装（Phase 1〜4 完遂！）
+    - Agent型への temperature フィールド追加
+    - Message型への agent_role, step_number 追加
+    - SummaryStepへの agent_id 追加
+    - ワークフローエンジンの履歴フォーマッターとサマリープロンプト強化
+    - エージェント設定画面への temperature スライダー追加
+    - ワークフロー編集でのサマリー担当者選択機能の実装
+    - 会議室でのメッセージ表示強化（役割バッジとステップ番号表示）
+    
     【次にやること】
-    - ワークフロー管理画面（作成・編集・削除）の新規実装 🛠️
-    - 会議記録のアーカイブ表示と検索機能の強化 📖
-    - 全体的なUXアニメーションの調整
+    - 会議室での「エージェント・サマリー」の実際の動作テスト（LLM実機確認）
+    - 必要に応じてさらなるプロンプトチューニング
   
   progress:
     current_phase:
-      number: 6
-      name: "ワークフロー統合・リファクタリング"
+      number: 4
+      name: "LLM Adjustments Integration"
       status: "completed"
     
-    current_task:
-      description: "アーカイブ表示と検索機能の強化"
-      started_at: "2026-02-02T21:20:00+09:00"
-    
     completed_phases:
-      - phase: 5
-        name: "会議実行エンジン実装"
+      - phase: 1
+        name: "Type Definitions & DB Design"
         completed_at: "2026-02-02"
-      - phase: 6
-        name: "ワークフロー統合・リファクタリング"
+      - phase: 2
+        name: "Backend Implementation"
         completed_at: "2026-02-02"
-      - phase: 7
-        name: "設定画面（ワークフロー管理）実装"
+      - phase: 3
+        name: "Frontend Implementation"
+        completed_at: "2026-02-02"
+      - phase: 4
+        name: "Integration Testing"
         completed_at: "2026-02-02"
 
   decisions:
     adopted:
-      - id: "D013"
-        date: "2026-02-02"
-        decision: "ステータス遷移への 'waiting' 導入"
-        reason: "ユーザーがホワイトボードを修正したり口を挟んだりするタイミングを、AIの実行フローと安全に同期するため"
-      - id: "D014"
-        date: "2026-02-02"
-        decision: "サマリー生成における GPT-4o 固定"
-        reason: "会議の結論は最も賢いモデルに委ねることで、議論の質を保証するため"
-      - id: "D015"
-        date: "2026-02-02"
-        decision: "Facilitators/Templatesコレクションの廃止とWorkflowへの統合"
-        reason: "データモデルの重複を排除し、会議作成・実行のロジックを一貫させるため"
-
-  features:
-    completed:
-      - id: "F-401"
-        name: "会議実行エンジン基盤"
-        status: "done"
-        completed_at: "2026-02-02"
-      - id: "F-402"
-        name: "ワークフロー進行・再開API"
-        status: "done"
-        completed_at: "2026-02-02"
-      - id: "F-501"
-        name: "ワークフロー統合リファクタリング"
-        status: "done"
-        completed_at: "2026-02-02"
+      - id: "D004"
+        decision: "SummaryステップにエージェントIDを必須化"
+        reason: "特定のエージェントにまとめを担当させることで、より柔軟な会議結果を得るため"
+      - id: "D005"
+        decision: "maxTokensのデフォルト値を4096に引き上げ"
+        reason: "詳細な議論記録やサマリーが途切れるのを防ぐため"

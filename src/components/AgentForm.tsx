@@ -33,6 +33,7 @@ export default function AgentForm({ initialData, onSubmit, onCancel, isLoading }
         style_id: initialData?.style_id || "", // 🔧 変更: output_style から style_id へ
         llm: initialData?.llm || "openai",
         model: initialData?.model || "",
+        temperature: initialData?.temperature ?? 0.7, // 🆕 追加（デフォルト0.7）
     });
 
     // --- 外部データ管理 (Models & Styles) 🆕 ---
@@ -216,6 +217,32 @@ export default function AgentForm({ initialData, onSubmit, onCancel, isLoading }
                             ))
                         )}
                     </Select>
+                </div>
+
+                {/* 🆕 LLM Temperature 設定 */}
+                <div className="space-y-3">
+                    <div className="flex justify-between items-end">
+                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight">創造性 (Temperature)</label>
+                        <span className="text-lg font-mono font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-lg border border-blue-100 dark:border-blue-800">
+                            {formData.temperature.toFixed(1)}
+                        </span>
+                    </div>
+                    <div className="px-1 py-2">
+                        <input
+                            type="range"
+                            name="temperature"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={formData.temperature}
+                            onChange={(e) => setFormData(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))}
+                            className="w-full h-2 bg-gray-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                        <div className="flex justify-between mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-0.5">
+                            <span>Precise (堅実)</span>
+                            <span>Creative (創造)</span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* 🆕 動的出力形式セレクター */}

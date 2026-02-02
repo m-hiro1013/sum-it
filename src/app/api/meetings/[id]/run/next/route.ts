@@ -83,6 +83,8 @@ export async function POST(
                 meeting_id: meetingId,
                 agent_id: msg.agent_id,
                 agent_name: msg.agent_name,
+                agent_role: msg.agent_role, // 🆕 追加
+                step_number: meeting.current_step || 0, // 🆕 追加
                 content: msg.content,
             })
         );

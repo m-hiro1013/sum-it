@@ -14,6 +14,7 @@
 | `style_id` | string | 選択された出力形式のID |
 | `llm` | string | LLMプロバイダー |
 | `model` | string | LLMモデルID |
+| `temperature` | number | LLMの創造性（0〜1.0、デフォルト0.7） | 🆕
 | `created_at` | timestamp | 作成日時 |
 | `updated_at` | timestamp | 更新日時 |
 
@@ -56,7 +57,7 @@
 |------|--------|-------------|
 | `speak` | `agent_id: string` | 1人が発言 |
 | `parallel_speak` | `agent_ids: string[]` | 複数人が同時発言 |
-| `summary` | - | 議長がまとめ（会議完了） |
+| `summary` | `agent_id: string` | 指定エージェントがまとめ（会議完了） | 🔄
 | `user_intervention` | `label?: string` | ユーザー介入（一時停止） |
 
 ### 5. `meetings` (会議室 - ログと設定)
@@ -80,10 +81,12 @@
 |-------|------|-------------|
 | `id" | string | Document ID |
 | `meeting_id" | string | 会議ID |
-| `agent_id" | string | エージェントID (system, facilitator, or real agent id) |
-| `agent_name" | string | 表示名 |
-| `content" | string | 発言内容 |
-| `created_at" | timestamp | 発言日時 |
+| `agent_id` | string | エージェントID (system, facilitator, or real agent id) |
+| `agent_name` | string | 表示名 |
+| `agent_role` | string | 発言時のエージェントの役割 | 🆕 
+| `step_number` | number | 発言時のステップ番号 | 🆕
+| `content` | string | 発言内容 |
+| `created_at` | timestamp | 発言日時 |
 
 ## Relationships
 - `agents.style_id" → `output_styles.id"

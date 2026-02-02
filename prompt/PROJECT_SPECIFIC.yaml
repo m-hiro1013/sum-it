@@ -60,10 +60,16 @@ phases:
   - phase: 3
     name: "AI会議実行エンジン"
     description: "エージェントの発言ターン制御とLLM連携の実装"
-    status: "in_progress"
+    status: "done"
   - phase: 4
-    name: "履歴管理 & テンプレート"
-    description: "会議テンプレート機能と過去ログの高度な閲覧機能"
+    name: "ワークフロー統合"
+    description: "議長・テンプレート概念のワークフローへの完全統合"
+    status: "done"
   - phase: 5
-    name: "高度な連携"
-    description: "並列発言、ファイル添付、API経由の外部データ連携など"
+    name: "LLM微調整 & エージェント強化"
+    description: "創造性コントロール、文脈重視の履歴管理、エージェント・サマリー機能"
+    status: "done"
+  - phase: 6
+    name: "高度な連携機能（Next Step）"
+    description: "並列発言の完全同期、ファイル添付、API経由の外部データ連携など"
+    status: "backlog"

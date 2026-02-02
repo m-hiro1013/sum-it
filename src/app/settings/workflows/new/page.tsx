@@ -58,7 +58,7 @@ export default function NewWorkflowPage() {
         } else if (type === "parallel_speak") {
             newStep = { type: "parallel_speak", agent_ids: [] };
         } else if (type === "summary") {
-            newStep = { type: "summary" };
+            newStep = { type: "summary", agent_id: selectedAgentIds[0] || "" };
         } else {
             newStep = { type: "user_intervention", label: "ユーザーの介入待ち" };
         }
@@ -296,7 +296,19 @@ export default function NewWorkflowPage() {
                                             )}
 
                                             {step.type === 'summary' && (
-                                                <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">Final Summary & End Meeting</span>
+                                                <div className="flex items-center w-full">
+                                                    <span className="text-[9px] font-black uppercase tracking-tighter text-blue-500 mr-2 border border-blue-200 px-1 rounded">Assigning</span>
+                                                    <select
+                                                        value={step.agent_id}
+                                                        onChange={e => handleUpdateStep(index, { agent_id: e.target.value })}
+                                                        className="bg-transparent border-none text-sm font-bold focus:ring-0 w-full"
+                                                    >
+                                                        <option value="">担当エージェントを選択...</option>
+                                                        {agents.filter(a => selectedAgentIds.includes(a.id)).map(a => (
+                                                            <option key={a.id} value={a.id}>{a.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
                                             )}
                                         </div>
                                     </div>

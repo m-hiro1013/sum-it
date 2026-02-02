@@ -29,6 +29,8 @@ export interface Message {
     meeting_id: string;
     agent_id: string;
     agent_name: string;
+    agent_role: string; // 🆕 追加
+    step_number: number; // 🆕 追加
     agent_avatar_url?: string; // 🆕 アイコンも出したい！
     content: string;
     created_at: any;

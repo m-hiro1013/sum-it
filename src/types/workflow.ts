@@ -14,6 +14,7 @@ export interface ParallelSpeakStep {
 
 export interface SummaryStep {
     type: "summary";
+    agent_id: string; // 🆕 サマリー担当エージェント
 }
 
 export interface UserInterventionStep {
