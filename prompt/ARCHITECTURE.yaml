@@ -8,8 +8,8 @@
 # =====================================
 
 architecture:
-  version: "1.4"
-  last_updated: "2026-02-02T11:55:00+09:00"
+  version: "2.0"
+  last_updated: "2026-02-02T13:40:00+09:00"
 
   project:
     name: "sum-it"
@@ -26,18 +26,7 @@ architecture:
           name: "Meetings Room CRUD"
           description: "リアルタイムフィード、ホワイトボード同期、タイトル・設定の保存・更新、会議の削除機能"
           status: "done"
-        - id: "F-Facilitator"
-          name: "Facilitators Management"
-          description: "議長の進行・結論ロジックの定義機能"
-          status: "done"
     phase3:
-      name: "テンプレート・効率化"
-      features:
-        - id: "F-Template"
-          name: "Meeting Templates"
-          description: "議長とメンバーのセット構成を保存・呼び出し可能にする機能。作成画面での同時保存にも対応。"
-          status: "done"
-    phase4:
       name: "会議実行エンジン"
       features:
         - id: "F-Engine-Core"
@@ -47,4 +36,15 @@ architecture:
         - id: "F-Meeting-Control-API"
           name: "Meeting Control APIs"
           description: "議論の進行(next)と、介入後の再開(resume)を制御するAPI群"
+          status: "done"
+    phase4:
+      name: "ワークフロー統合リファクタリング"
+      features:
+        - id: "F-Workflow-Consolidation"
+          name: "Facilitator & Template Consolidation"
+          description: "議長プロンプトとテンプレート構成をワークフローに統合。冗長なデータモデルの廃止。"
+          status: "done"
+        - id: "F-Workflow-Centric-UI"
+          name: "Workflow-Centric Meeting Creation UI"
+          description: "ワークフロー選択を核としたシンプルな会議作成画面。プロンプト上書き機能付き。"
           status: "done"

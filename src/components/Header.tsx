@@ -14,6 +14,7 @@ export default function Header() {
 
     const adminItems = [
         { name: "Output Styles", href: "/settings/styles", icon: LayoutGrid },
+        { name: "Workflows", href: "/settings/workflows", icon: Terminal },
     ];
 
     return (
