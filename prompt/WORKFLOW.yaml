@@ -1,21 +1,20 @@
 workflow:
-  last_updated: "2026-02-03"
+  last_updated: "2026-02-03 13:10:00"
   last_session_summary: |
     【今回のセッションでやったこと】
-    - 「エージェント・サマリー」の担当者上書き機能の実装
-    - プロンプトテンプレート管理システム（Firestore CRUD + 型定義）の構築
-    - ひろきくん特製「StructuredPlan」の究極進化版（UltimateDevPlan）の作成と投入
-    - サマリー作成時のトークン制限を16,384トークンへ拡張（限界突破！）
-    - 会議作成UIへの「詳細設定（プロンプト・オーバーライド & テンプレート選択）」機能の追加
+    - LLMモデル名の2026年最新仕様への対応（Gemini 3, Claude 4.5, GPT-5）
+    - 全プロバイダー（Anthropic, Google, OpenAI）を対象とした Prompt Caching の実装
+    - whiteboardをプロンプトから分離し、cacheableContextとしてLLMへ渡すリファクタリングの実施
+    - 統合キャッシュログシステム（LLM Cache Hit表示）の導入による可視化
     
     【次にやること】
-    - 実際の会議での『UltimateDevPlan』の出力品質テスト（特に複雑なデータ仕様の確定度合い）
-    - ホワイトボード同期のさらなる最適化（必要があれば）
+    - 実際の多人数会議でのキャッシュヒット率の定量的評価
+    - 長時間会議（コンテキスト肥大化時）のメモリ管理とTTLの最適化検討
   
   progress:
     current_phase:
-      number: 6
-      name: "Advanced Content Engineering & Customization"
+      number: 7
+      name: "Cost Efficiency & Prompt Caching Optimization"
       status: "in_progress"
     
     completed_phases:
@@ -34,41 +33,35 @@ workflow:
       - phase: 5
         name: "LLM Adjustments Integration"
         completed_at: "2026-02-02"
+      - phase: 6
+        name: "Advanced Content Engineering"
+        completed_at: "2026-02-03"
 
   decisions:
     adopted:
-      - id: "D004"
-        decision: "SummaryステップにエージェントIDを必須化"
-        reason: "特定のエージェントにまとめを担当させることで、より柔軟な会議結果を得るため"
-      - id: "D005"
-        decision: "maxTokensのデフォルト値を4096に引き上げ"
-        reason: "詳細な議論記録やサマリーが途切れるのを防ぐため"
-      - id: "D006"
-        decision: "サマリー作成専用に16384トークンのバースト設定を導入"
-        reason: "複雑な開発計画（StructuredPlan）を最後まで途切れず出力するため"
-      - id: "D007"
-        decision: "プロンプトテンプレートのFirestore管理化"
-        reason: "開始指示やサマリーロジックを柔軟に切り替え、ひろきくんのベストプラクティスを再利用するため"
+      - id: "D008"
+        decision: "Prompt Caching用の構造的レイヤリングを採用"
+        reason: "whiteboard（大規模コンテキスト）を最上位に配置し、エージェント人格や履歴を分離することでキャッシュ再利用率を最大化するため"
+      - id: "D009"
+        decision: "Gemini 3/Flash等のモデル名正規化ロジックの導入"
+        reason: "2026年現在のAPI仕様（-preview必須化等）に合わせ、ユーザー指定の簡略名と実API名の乖離を吸収するため"
 
   features:
     in_progress:
-      - id: "F-Template-Manager"
-        name: "Prompt Template System"
+      - id: "F-Prompt-Caching"
+        name: "Prompt Caching Optimization"
         status: "in_progress"
     
     planned:
-      - id: "F-Deep-Whiteboard-Sync"
-        name: "Deep Whiteboard Logic Sync"
+      - id: "F-Cost-Dashboard"
+        name: "LLM Cost & Cache Analytics Dashboard"
         status: "planned"
 
   file_structure:
-    created:
-      - "src/types/prompt-template.ts"
-      - "scripts/seed-templates.ts"
-    
+    created: []
     to_modify:
+      - "src/lib/llm.ts"
       - "src/lib/workflow-engine.ts"
-      - "src/app/meetings/new/page.tsx"
 
   cautions:
-    - "極端な長文出力(16k)はAPIコストとレスポンス時間に影響するため、サマリーステップ以外では使用しない。"
+    - "AnthropicのキャッシュはTTLが5分〜のため、短時間の連続発言では有効だが、長時間放置した後の再開時は初回書込が発生することに留意。"

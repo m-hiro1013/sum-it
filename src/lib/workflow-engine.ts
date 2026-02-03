@@ -4,6 +4,7 @@ import { Meeting, Message } from "../types/meeting";
 import { MeetingWorkflow, WorkflowStep, SpeakStep, ParallelSpeakStep, SummaryStep, UserInterventionStep } from "../types/workflow";
 import { OutputStyle } from "../types/style";
 import { getOutputStyle } from "./firestore";
+import { GoogleGenerativeAI } from "@google/generative-ai"; // 🆕 これ忘れてた！
 
 // ==========================================
 // 型定義
@@ -24,12 +25,20 @@ export interface StepResult {
     agent_name: string;
     agent_role: string;
     agent_avatar_url?: string;
+    usage?: {
+        input_tokens: number;
+        output_tokens: number;
+    };
 }
 
 export interface ExecutionResult {
     success: boolean;
     status: "in_progress" | "waiting" | "completed";
     messages: StepResult[];
+    total_usage?: {
+        input_tokens: number;
+        output_tokens: number;
+    };
     error?: string;
 }
 
@@ -38,9 +47,22 @@ export interface ExecutionResult {
  */
 function normalizeModelId(modelId: string): string {
     const mapping: Record<string, string> = {
-        "claude-4.5-sonnet": "claude-sonnet-4-5",
-        "claude-4.5-opus": "claude-opus-4-5",
-        "claude-4.5-haiku": "claude-haiku-4-5",
+        // --- Google Gemini (2026 Feb 最新仕様) ---
+        // 404エラーの正体: プレビューモデルは "-preview" が必須だよ💅
+        "gemini-3-flash": "gemini-3-flash-preview",
+        "gemini-3-pro": "gemini-3-pro-preview",
+        "gemini-flash-latest": "gemini-3-flash-preview",
+
+        // --- Anthropic Claude (2026 Feb 最新仕様) ---
+        // 仕様書準拠: 識別子に正確な日付または最新エイリアスを指定
+        "claude-4.5-sonnet": "claude-4-5-sonnet-20250929",
+        "claude-4.5-opus": "claude-4-5-opus-20251101",
+        "claude-4.5-haiku": "claude-4-5-haiku-20251015",
+
+        // --- OpenAI GPT-5 (2026 Feb 最新仕様) ---
+        // GPT-5.2が主流だけどAPIでは chat-latest 等が推奨
+        "gpt-5": "gpt-5-chat-latest",
+        "gpt-5-thinking": "gpt-5",
     };
     return mapping[modelId] || modelId;
 }
@@ -128,8 +150,7 @@ async function handleSpeak(
     // 4. ユーザーメッセージ構築
     const userMessage = buildUserMessage(
         meeting.topic,
-        whiteboard,
-        messages,
+        messages, // 💅 whiteboardを削除
         agent.role
     );
 
@@ -139,6 +160,7 @@ async function handleSpeak(
             provider: agent.llm as "openai" | "anthropic" | "google",
             model: normalizeModelId(agent.model),
             systemPrompt: systemPrompt,
+            cacheableContext: whiteboard || undefined, // 🆕 キャッシュ対象として渡すよ！💅
             temperature: agent.temperature ?? 0.7,
         });
 
@@ -147,12 +169,14 @@ async function handleSpeak(
             success: true,
             status: "in_progress",
             messages: [{
-                content: response,
+                content: response.content,
                 agent_id: agent.id,
                 agent_name: agent.name,
                 agent_role: agent.role,
                 agent_avatar_url: agent.avatar_url,
+                usage: response.usage,
             }],
+            total_usage: response.usage,
         };
     } catch (error: any) {
         console.error("LLM Execution Error:", error);
@@ -190,8 +214,7 @@ async function handleParallelSpeak(
             const systemPrompt = buildSystemPrompt(agent, style, startPrompt);
             const userMessage = buildUserMessage(
                 meeting.topic,
-                whiteboard,
-                messages,
+                messages, // 💅 whiteboardを削除
                 agent.role
             );
 
@@ -199,24 +222,51 @@ async function handleParallelSpeak(
                 provider: agent.llm as "openai" | "anthropic" | "google",
                 model: normalizeModelId(agent.model),
                 systemPrompt: systemPrompt,
+                cacheableContext: whiteboard || undefined, // 🆕 キャッシュ対象として渡すよ！💅
                 temperature: agent.temperature ?? 0.7,
             });
 
             return {
-                content: response,
+                content: response.content,
                 agent_id: agent.id,
                 agent_name: agent.name,
                 agent_role: agent.role,
-                agent_avatar_url: agent.avatar_url, // 🆕 追加
+                agent_avatar_url: agent.avatar_url,
+                usage: response.usage,
             };
         });
 
-        const results = await Promise.all(promises);
+        const results = await Promise.allSettled(promises);
+
+        // 成功した結果だけを抽出💅
+        const successfulResults = results
+            .filter((res): res is PromiseFulfilledResult<any> => res.status === "fulfilled")
+            .map(res => res.value as StepResult);
+
+        // 失敗したエージェントをログ出力
+        const failedCount = results.filter(res => res.status === "rejected").length;
+        if (failedCount > 0) {
+            console.warn(`⚠️ ParallelSpeak: ${failedCount}人のエージェントが発言に失敗しました。会議を継続します。🛡️`);
+        }
+
+        if (successfulResults.length === 0 && (step as ParallelSpeakStep).agent_ids.length > 0) {
+            throw new Error("全員の発言に失敗しました。💅💦");
+        }
+
+        // トータル使用量を計算
+        const totalUsage = successfulResults.reduce(
+            (acc, res) => ({
+                input_tokens: acc.input_tokens + (res.usage?.input_tokens || 0),
+                output_tokens: acc.output_tokens + (res.usage?.output_tokens || 0),
+            }),
+            { input_tokens: 0, output_tokens: 0 }
+        );
 
         return {
             success: true,
             status: "in_progress",
-            messages: results,
+            messages: successfulResults,
+            total_usage: totalUsage,
         };
     } catch (error: any) {
         console.error("Parallel LLM Execution Error:", error);
@@ -264,7 +314,7 @@ async function handleSummary(
     // 🆕 プロンプトビルダーにスタイルを渡すよ！✨
     const endPrompt = meeting.end_prompt_override || workflow.end_prompt;
     const systemPrompt = buildSummarySystemPrompt(agent, style, endPrompt);
-    const userMessage = buildSummaryUserMessage(meeting.topic, whiteboard, messages);
+    const userMessage = buildSummaryUserMessage(meeting.topic, messages); // 💅 whiteboardを削除
 
     try {
         // 🆕 サマリー作成はトークンを大量に使うから、16384トークンまで開放！🚀
@@ -272,6 +322,7 @@ async function handleSummary(
             provider: agent.llm as "openai" | "anthropic" | "google",
             model: normalizeModelId(agent.model),
             systemPrompt: systemPrompt,
+            cacheableContext: whiteboard || undefined, // 🆕 キャッシュ対象として渡すよ！💅
             temperature: agent.temperature ?? 0.7,
             maxTokens: 16384, // 限界突破！💅
         });
@@ -280,12 +331,14 @@ async function handleSummary(
             success: true,
             status: "completed", // サマリーが出たら会議終了！🏁
             messages: [{
-                content: response,
+                content: response.content,
                 agent_id: agent.id,
                 agent_name: agent.name,
                 agent_role: agent.role,
                 agent_avatar_url: agent.avatar_url,
+                usage: response.usage,
             }],
+            total_usage: response.usage,
         };
     } catch (error: any) {
         console.error("Summary LLM Execution Error:", error);
@@ -383,16 +436,12 @@ ${style.prompt_segment}
  */
 function buildSummaryUserMessage(
     topic: string,
-    whiteboard: string,
     messages: Message[]
 ): string {
     const history = formatMessageHistory(messages);
 
     return `## 会議の議題
 ${topic}
-
-## ホワイトボード（これまでの合意事項・共有情報）
-${whiteboard || "（特になし）"}
 
 ## これまでの会議記録
 ${history}
@@ -435,7 +484,6 @@ ${style.prompt_segment}
 
 function buildUserMessage(
     topic: string,
-    whiteboard: string,
     messages: Message[],
     role: string
 ): string {
@@ -444,9 +492,6 @@ function buildUserMessage(
 
     return `## 会議の議題
 ${topic}
-
-## ホワイトボード（これまでの合意事項・共有情報）
-${whiteboard || "（特に書き込みはありません）"}
 
 ## 議論の履歴
 ${history}
