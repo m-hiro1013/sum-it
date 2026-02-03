@@ -124,50 +124,74 @@ export default function MeetingRoomPage() {
         }
     };
 
+    // 🆕 ワークフローを「待ち」状態になるまで自動実行するコアロジック！🚀
+    const runWorkflowUntilWait = async (targetMeeting: Meeting) => {
+        setIsProcessing(true);
+        let loopMeeting = { ...targetMeeting };
+
+        try {
+            while (loopMeeting.status === "in_progress") {
+                const response = await fetch(`/api/meetings/${loopMeeting.id}/run/next`, {
+                    method: "POST",
+                });
+                const result = await response.json();
+
+                if (!result.success) {
+                    alert(`エラー発生: ${result.error}😭`);
+                    break;
+                }
+
+                const updated: Meeting = {
+                    ...loopMeeting,
+                    current_step: result.current_step,
+                    status: result.status as Meeting["status"]
+                };
+                setMeeting(updated);
+                loopMeeting = updated;
+
+                // 待機中か完了になったらループを抜けるよ💅
+                if (loopMeeting.status !== "in_progress") break;
+
+                // AIが考えてる感を出すために、ちょっとだけ待機！✨
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+        } catch (error) {
+            console.error("Workflow Auto-Run Error:", error);
+            alert("通信エラーになっちゃった😭");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     const handleStartMeeting = async () => {
         if (!meeting || !workflow) return;
         setIsProcessing(true);
         try {
-            await updateMeeting(meeting.id, { status: "in_progress" });
-            setMeeting({ ...meeting, status: "in_progress" });
+            const startStatus: Meeting["status"] = "in_progress";
+            await updateMeeting(meeting.id, { status: startStatus });
+            const updatedMeeting: Meeting = { ...meeting, status: startStatus };
+            setMeeting(updatedMeeting);
+
             await addMessage({
                 meeting_id: meeting.id,
                 agent_id: "system",
                 agent_name: "SYSTEM",
-                agent_role: "system", // 🆕 追加
-                step_number: 0,      // 🆕 追加
+                agent_role: "system",
+                step_number: 0,
                 content: `会議を開始しました。議題: ${meeting.topic}\nワークフロー「${workflow.name}」に従って進行します。💅✨`,
             });
+
+            // 自動進行スタート！🚀
+            await runWorkflowUntilWait(updatedMeeting);
         } catch (error) {
             console.error(error);
-        } finally {
             setIsProcessing(false);
         }
     };
 
     const handleNextStep = async () => {
         if (!meeting) return;
-        setIsProcessing(true);
-        try {
-            const response = await fetch(`/api/meetings/${meeting.id}/run/next`, {
-                method: "POST",
-            });
-            const result = await response.json();
-            if (!result.success) {
-                alert(`エラー発生: ${result.error}😭`);
-            } else {
-                setMeeting({
-                    ...meeting,
-                    current_step: result.current_step,
-                    status: result.status
-                });
-            }
-        } catch (error) {
-            console.error(error);
-            alert("通信エラーになっちゃった😭");
-        } finally {
-            setIsProcessing(false);
-        }
+        await runWorkflowUntilWait(meeting);
     };
 
     const handleResumeMeeting = async () => {
@@ -182,18 +206,22 @@ export default function MeetingRoomPage() {
             const result = await response.json();
             if (!result.success) {
                 alert(`再開エラー: ${result.error}😭`);
+                setIsProcessing(false);
             } else {
-                setMeeting({
+                const updated: Meeting = {
                     ...meeting,
                     whiteboard: editWhiteboard,
                     current_step: result.current_step,
-                    status: result.status
-                });
+                    status: result.status as Meeting["status"]
+                };
+                setMeeting(updated);
+
+                // 再開後も自動進行を継続するよ！🌈
+                await runWorkflowUntilWait(updated);
             }
         } catch (error) {
             console.error(error);
             alert("通信エラーになっちゃった😭");
-        } finally {
             setIsProcessing(false);
         }
     };
@@ -203,8 +231,9 @@ export default function MeetingRoomPage() {
         setIsProcessing(true);
         try {
             const summary = `## 結論サマリー\n議論の結果、これまでの内容が集約されました。💅🚀🌈`;
-            await updateMeeting(meeting.id, { status: "completed", final_conclusion: summary, completed_at: new Date() });
-            setMeeting({ ...meeting, status: "completed", final_conclusion: summary });
+            const completeStatus: Meeting["status"] = "completed";
+            await updateMeeting(meeting.id, { status: completeStatus, final_conclusion: summary, completed_at: new Date() });
+            setMeeting({ ...meeting, status: completeStatus, final_conclusion: summary });
         } catch (error) {
             console.error(error);
         } finally {
@@ -331,7 +360,11 @@ export default function MeetingRoomPage() {
                                 <div key={m.id} className={`flex gap-4 ${isSystem ? "justify-center" : ""}`}>
                                     {!isSystem && (
                                         <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-white dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900 flex items-center justify-center text-gray-400">
-                                            <Bot size={24} />
+                                            {m.agent_avatar_url ? (
+                                                <img src={m.agent_avatar_url} alt={m.agent_name} className="h-full w-full object-cover" />
+                                            ) : (
+                                                <Bot size={24} />
+                                            )}
                                         </div>
                                     )}
                                     <div className={`max-w-[80%] ${isSystem ? "w-full" : "relative group"}`}>

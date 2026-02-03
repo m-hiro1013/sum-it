@@ -22,7 +22,8 @@ export interface StepResult {
     content: string;
     agent_id: string;
     agent_name: string;
-    agent_role: string;  // 🆕 追加
+    agent_role: string;
+    agent_avatar_url?: string;
 }
 
 export interface ExecutionResult {
@@ -30,6 +31,18 @@ export interface ExecutionResult {
     status: "in_progress" | "waiting" | "completed";
     messages: StepResult[];
     error?: string;
+}
+
+/**
+ * 🆕 モデル名をAPIが受け取れる形式に変換するよ！💅
+ */
+function normalizeModelId(modelId: string): string {
+    const mapping: Record<string, string> = {
+        "claude-4.5-sonnet": "claude-sonnet-4-5",
+        "claude-4.5-opus": "claude-opus-4-5",
+        "claude-4.5-haiku": "claude-haiku-4-5",
+    };
+    return mapping[modelId] || modelId;
 }
 
 // ==========================================
@@ -109,7 +122,8 @@ async function handleSpeak(
     }
 
     // 3. システムプロンプト構築
-    const systemPrompt = buildSystemPrompt(agent, style, workflow.start_prompt);
+    const startPrompt = meeting.start_prompt_override || workflow.start_prompt;
+    const systemPrompt = buildSystemPrompt(agent, style, startPrompt);
 
     // 4. ユーザーメッセージ構築
     const userMessage = buildUserMessage(
@@ -123,9 +137,9 @@ async function handleSpeak(
         // 5. LLM呼び出し
         const response = await callLLM(userMessage, {
             provider: agent.llm as "openai" | "anthropic" | "google",
-            model: agent.model,
+            model: normalizeModelId(agent.model),
             systemPrompt: systemPrompt,
-            temperature: agent.temperature ?? 0.7,  // 🆕 追加
+            temperature: agent.temperature ?? 0.7,
         });
 
         // 6. 結果を返す
@@ -136,7 +150,8 @@ async function handleSpeak(
                 content: response,
                 agent_id: agent.id,
                 agent_name: agent.name,
-                agent_role: agent.role,  // 🆕 追加
+                agent_role: agent.role,
+                agent_avatar_url: agent.avatar_url,
             }],
         };
     } catch (error: any) {
@@ -171,7 +186,8 @@ async function handleParallelSpeak(
                 throw new Error(`Output style not found for agent ${agent.name}`);
             }
 
-            const systemPrompt = buildSystemPrompt(agent, style, workflow.start_prompt);
+            const startPrompt = meeting.start_prompt_override || workflow.start_prompt;
+            const systemPrompt = buildSystemPrompt(agent, style, startPrompt);
             const userMessage = buildUserMessage(
                 meeting.topic,
                 whiteboard,
@@ -181,16 +197,17 @@ async function handleParallelSpeak(
 
             const response = await callLLM(userMessage, {
                 provider: agent.llm as "openai" | "anthropic" | "google",
-                model: agent.model,
+                model: normalizeModelId(agent.model),
                 systemPrompt: systemPrompt,
-                temperature: agent.temperature ?? 0.7,  // 🆕 追加
+                temperature: agent.temperature ?? 0.7,
             });
 
             return {
                 content: response,
                 agent_id: agent.id,
                 agent_name: agent.name,
-                agent_role: agent.role,  // 🆕 追加
+                agent_role: agent.role,
+                agent_avatar_url: agent.avatar_url, // 🆕 追加
             };
         });
 
@@ -221,28 +238,42 @@ async function handleSummary(
 ): Promise<ExecutionResult> {
     const { agents, meeting, messages, whiteboard, workflow } = context;
 
-    // 🆕 サマリー担当エージェントを取得
-    const agent = agents.get(step.agent_id);
+    // 🆕 サマリー担当エージェントを取得（会議での上書きを最優先！）
+    const summaryAgentId = meeting.summary_agent_id || step.agent_id;
+    const agent = agents.get(summaryAgentId);
     if (!agent) {
         return {
             success: false,
             status: "in_progress",
             messages: [],
-            error: `Summary agent not found: ${step.agent_id}`,
+            error: `Summary agent not found: ${summaryAgentId}`,
         };
     }
 
-    // 🆕 新しいプロンプトビルダーを使用
-    const systemPrompt = buildSummarySystemPrompt(agent, workflow.end_prompt);
+    // 🆕 出力スタイル取得（議長も自分らしく！💅）
+    const style = await getOutputStyle(agent.style_id);
+    if (!style) {
+        return {
+            success: false,
+            status: "in_progress",
+            messages: [],
+            error: `Output style not found for agent: ${agent.name}`,
+        };
+    }
+
+    // 🆕 プロンプトビルダーにスタイルを渡すよ！✨
+    const endPrompt = meeting.end_prompt_override || workflow.end_prompt;
+    const systemPrompt = buildSummarySystemPrompt(agent, style, endPrompt);
     const userMessage = buildSummaryUserMessage(meeting.topic, whiteboard, messages);
 
     try {
-        // 🆕 エージェントのLLM設定を使用
+        // 🆕 サマリー作成はトークンを大量に使うから、16384トークンまで開放！🚀
         const response = await callLLM(userMessage, {
             provider: agent.llm as "openai" | "anthropic" | "google",
-            model: agent.model,
+            model: normalizeModelId(agent.model),
             systemPrompt: systemPrompt,
             temperature: agent.temperature ?? 0.7,
+            maxTokens: 16384, // 限界突破！💅
         });
 
         return {
@@ -252,7 +283,8 @@ async function handleSummary(
                 content: response,
                 agent_id: agent.id,
                 agent_name: agent.name,
-                agent_role: agent.role,  // 🆕 追加
+                agent_role: agent.role,
+                agent_avatar_url: agent.avatar_url,
             }],
         };
     } catch (error: any) {
@@ -322,6 +354,7 @@ ${m.content}`;
  */
 function buildSummarySystemPrompt(
     agent: Agent,
+    style: OutputStyle,
     endPrompt: string
 ): string {
     return `あなたは「${agent.name}」という名前の会議参加者です。
@@ -334,6 +367,9 @@ ${agent.prompt ? `## 追加の指示\n${agent.prompt}` : ""}
 
 ## まとめ作成の指示
 ${endPrompt}
+
+## 出力形式・スタイル
+${style.prompt_segment}
 
 ## 出力の長さについて
 出力の長さに制限はありません。議論の内容を網羅的にまとめてください。

@@ -8,8 +8,8 @@
 # =====================================
 
 architecture:
-  version: "2.0"
-  last_updated: "2026-02-02T23:15:00+09:00"
+  version: "2.1"
+  last_updated: "2026-02-03T03:30:00+09:00"
 
   project:
     name: "sum-it"
@@ -48,7 +48,7 @@ architecture:
           name: "Workflow-Centric Meeting Creation UI"
           description: "ワークフロー選択を核としたシンプルな会議作成画面。プロンプト上書き機能付き。"
           status: "done"
-    phase 5:
+    phase5:
       name: "LLM連携の高度化 & エージェント強化"
       features:
         - id: "F-Agent-Temperature"
@@ -62,4 +62,19 @@ architecture:
         - id: "F-Agent-Centric-Summary"
           name: "Agent-Centric Summarization"
           description: "議長固定から、特定のエージェントが人格を保ったまま議論をまとめられるように拡張。"
+          status: "done"
+    phase6:
+      name: "プロンプト・エンジニアリング & カスタマイズ"
+      features:
+        - id: "F-Prompt-Template-System"
+          name: "Prompt Template Library"
+          description: "開始指示やサマリーロジックをテンプレート化(start/end)し、Firestoreで管理。会議作成時にワンクリックで適用可能。"
+          status: "done"
+        - id: "F-Ultimate-Dev-Plan"
+          name: "UltimateDevPlan Execution"
+          description: "要件・設計・ロジックを完全確定させ、議論を先送りしない強力な構造化サマリーテンプレートの導入。"
+          status: "done"
+        - id: "F-Burst-Token-Limit"
+          name: "Burst Token Limit for Plans"
+          description: "サマリー作成時のトークン制限を16,384まで拡張。超長文の構造化プランも途切れず出力可能。"
           status: "done"

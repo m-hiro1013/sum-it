@@ -25,6 +25,7 @@ const MESSAGES_COLLECTION = "messages";
 const MODELS_COLLECTION = "llm_models";
 const STYLES_COLLECTION = "output_styles";
 const WORKFLOWS_COLLECTION = "meeting_workflows";
+const PROMPT_TEMPLATES_COLLECTION = "prompt_templates";
 
 // --- Agents ---
 export const getAgents = async (): Promise<Agent[]> => {
@@ -143,4 +144,18 @@ export const updateMeetingWorkflow = async (id: string, workflow: Partial<Meetin
 };
 export const deleteMeetingWorkflow = async (id: string) => {
     await deleteDoc(doc(db, WORKFLOWS_COLLECTION, id));
+};
+
+// --- Prompt Templates ---
+import { PromptTemplate, PromptTemplateInput } from "../types/prompt-template";
+
+export const getPromptTemplates = async (type?: "start" | "end"): Promise<PromptTemplate[]> => {
+    let q = query(collection(db, PROMPT_TEMPLATES_COLLECTION), where("is_active", "==", true), orderBy("created_at", "asc"));
+    if (type) {
+        q = query(collection(db, PROMPT_TEMPLATES_COLLECTION), where("is_active", "==", true), where("type", "==", type), orderBy("created_at", "asc"));
+    }
+    return (await getDocs(q)).docs.map(doc => ({ id: doc.id, ...doc.data() } as PromptTemplate));
+};
+export const createPromptTemplate = async (template: PromptTemplateInput) => {
+    return (await addDoc(collection(db, PROMPT_TEMPLATES_COLLECTION), { ...template, created_at: serverTimestamp() })).id;
 };

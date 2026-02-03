@@ -48,9 +48,14 @@ export async function POST(
         // }
 
         // 2. エージェントの収集（Map形式に変換）
-        // ワークフローに紐づくエージェントを使用
+        // ワークフローに紐づくエージェント + 会議固有のサマリー担当
         const agentsMap = new Map<string, Agent>();
-        const agentPromises = workflow.agent_ids.map(async (id) => {
+        const uniqueAgentIds = new Set([
+            ...workflow.agent_ids,
+            ...(meeting.summary_agent_id ? [meeting.summary_agent_id] : [])
+        ]);
+
+        const agentPromises = Array.from(uniqueAgentIds).map(async (id) => {
             const agent = await getAgent(id);
             if (agent) agentsMap.set(id, agent);
         });
@@ -77,21 +82,28 @@ export async function POST(
         }
 
         // 6. 結果の保存
+        // ステップ番号の確定（インクリメント）
+        const nextStepNumber = (meeting.current_step || 0) + 1;
+
         // 生成されたメッセージを一つずつ保存（並列でドーン！）
-        const messagePromises = result.messages.map(msg =>
-            addMessage({
+        // 🆕 AIたちが混乱しないように、更新後のステップ番号で保存するよ！💅
+        const messagePromises = result.messages.map(msg => {
+            const messageData: any = {
                 meeting_id: meetingId,
                 agent_id: msg.agent_id,
                 agent_name: msg.agent_name,
-                agent_role: msg.agent_role, // 🆕 追加
-                step_number: meeting.current_step || 0, // 🆕 追加
+                agent_role: msg.agent_role,
+                step_number: nextStepNumber, // 🆕 更新後の番号を使う！
                 content: msg.content,
-            })
-        );
-        await Promise.all(messagePromises);
+            };
 
-        // ステップ番号の更新とステータス変更
-        const nextStepNumber = (meeting.current_step || 0) + 1;
+            if (msg.agent_avatar_url) {
+                messageData.agent_avatar_url = msg.agent_avatar_url;
+            }
+
+            return addMessage(messageData);
+        });
+        await Promise.all(messagePromises);
         const isLastStep = nextStepNumber >= workflow.steps.length;
 
         const updateData: any = {

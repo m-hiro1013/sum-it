@@ -1,25 +1,22 @@
 workflow:
-  last_updated: "2026-02-02"
+  last_updated: "2026-02-03"
   last_session_summary: |
     【今回のセッションでやったこと】
-    - LLM調整機能の実装（Phase 1〜4 完遂！）
-    - Agent型への temperature フィールド追加
-    - Message型への agent_role, step_number 追加
-    - SummaryStepへの agent_id 追加
-    - ワークフローエンジンの履歴フォーマッターとサマリープロンプト強化
-    - エージェント設定画面への temperature スライダー追加
-    - ワークフロー編集でのサマリー担当者選択機能の実装
-    - 会議室でのメッセージ表示強化（役割バッジとステップ番号表示）
+    - 「エージェント・サマリー」の担当者上書き機能の実装
+    - プロンプトテンプレート管理システム（Firestore CRUD + 型定義）の構築
+    - ひろきくん特製「StructuredPlan」の究極進化版（UltimateDevPlan）の作成と投入
+    - サマリー作成時のトークン制限を16,384トークンへ拡張（限界突破！）
+    - 会議作成UIへの「詳細設定（プロンプト・オーバーライド & テンプレート選択）」機能の追加
     
     【次にやること】
-    - 会議室での「エージェント・サマリー」の実際の動作テスト（LLM実機確認）
-    - 必要に応じてさらなるプロンプトチューニング
+    - 実際の会議での『UltimateDevPlan』の出力品質テスト（特に複雑なデータ仕様の確定度合い）
+    - ホワイトボード同期のさらなる最適化（必要があれば）
   
   progress:
     current_phase:
-      number: 4
-      name: "LLM Adjustments Integration"
-      status: "completed"
+      number: 6
+      name: "Advanced Content Engineering & Customization"
+      status: "in_progress"
     
     completed_phases:
       - phase: 1
@@ -34,6 +31,9 @@ workflow:
       - phase: 4
         name: "Integration Testing"
         completed_at: "2026-02-02"
+      - phase: 5
+        name: "LLM Adjustments Integration"
+        completed_at: "2026-02-02"
 
   decisions:
     adopted:
@@ -43,3 +43,32 @@ workflow:
       - id: "D005"
         decision: "maxTokensのデフォルト値を4096に引き上げ"
         reason: "詳細な議論記録やサマリーが途切れるのを防ぐため"
+      - id: "D006"
+        decision: "サマリー作成専用に16384トークンのバースト設定を導入"
+        reason: "複雑な開発計画（StructuredPlan）を最後まで途切れず出力するため"
+      - id: "D007"
+        decision: "プロンプトテンプレートのFirestore管理化"
+        reason: "開始指示やサマリーロジックを柔軟に切り替え、ひろきくんのベストプラクティスを再利用するため"
+
+  features:
+    in_progress:
+      - id: "F-Template-Manager"
+        name: "Prompt Template System"
+        status: "in_progress"
+    
+    planned:
+      - id: "F-Deep-Whiteboard-Sync"
+        name: "Deep Whiteboard Logic Sync"
+        status: "planned"
+
+  file_structure:
+    created:
+      - "src/types/prompt-template.ts"
+      - "scripts/seed-templates.ts"
+    
+    to_modify:
+      - "src/lib/workflow-engine.ts"
+      - "src/app/meetings/new/page.tsx"
+
+  cautions:
+    - "極端な長文出力(16k)はAPIコストとレスポンス時間に影響するため、サマリーステップ以外では使用しない。"

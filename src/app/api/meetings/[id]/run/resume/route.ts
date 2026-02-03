@@ -64,7 +64,12 @@ export async function POST(
 
         // エージェントの収集
         const agentsMap = new Map<string, Agent>();
-        const agentPromises = workflow.agent_ids.map(async (id) => {
+        const uniqueAgentIds = new Set([
+            ...workflow.agent_ids,
+            ...(meeting.summary_agent_id ? [meeting.summary_agent_id] : [])
+        ]);
+
+        const agentPromises = Array.from(uniqueAgentIds).map(async (id) => {
             const agent = await getAgent(id);
             if (agent) agentsMap.set(id, agent);
         });
@@ -91,20 +96,25 @@ export async function POST(
         }
 
         // 結果の保存
-        const messagePromises = result.messages.map(msg =>
-            addMessage({
+        const nextStepNumber = (meeting.current_step || 0) + 1;
+
+        const messagePromises = result.messages.map(msg => {
+            const messageData: any = {
                 meeting_id: meetingId,
                 agent_id: msg.agent_id,
                 agent_name: msg.agent_name,
-                agent_role: msg.agent_role, // 🆕 追加
-                step_number: meeting.current_step || 0, // 🆕 追加
+                agent_role: msg.agent_role,
+                step_number: nextStepNumber,
                 content: msg.content,
-            })
-        );
-        await Promise.all(messagePromises);
+            };
 
-        // ステップ番号の更新とステータス変更
-        const nextStepNumber = (meeting.current_step || 0) + 1;
+            if (msg.agent_avatar_url) {
+                messageData.agent_avatar_url = msg.agent_avatar_url;
+            }
+
+            return addMessage(messageData);
+        });
+        await Promise.all(messagePromises);
 
         const updateData: any = {
             current_step: nextStepNumber,

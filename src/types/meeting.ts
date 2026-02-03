@@ -11,6 +11,7 @@ export interface Meeting {
     // プロンプト上書き（オプション）
     start_prompt_override?: string; // 🆕 会議開始時の全体指示を上書き
     end_prompt_override?: string;   // 🆕 サマリー作成時の指示を上書き
+    summary_agent_id?: string;      // 🆕 サマリー担当エージェントを上書き（旧議長/Facilitator）
 
     // 削除
     // facilitator_id: string;  // ❌ 削除
